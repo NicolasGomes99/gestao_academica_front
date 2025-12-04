@@ -19,7 +19,6 @@ import {
 } from 'chart.js';
 import { Bar, Doughnut, Pie } from 'react-chartjs-2';
 
-// Importar todos os ícones do MUI em um único import
 import {
   FilterAlt,
   CalendarMonth,
@@ -34,7 +33,6 @@ import {
   MenuBook
 } from '@mui/icons-material';
 
-// Registrar componentes do Chart.js
 ChartJS.register(
   ArcElement,
   Tooltip,
@@ -123,18 +121,17 @@ const estrutura = {
   }
 };
 
-// Cores do sistema (paleta acadêmica)
 const cores = {
   primaria: {
-    azul: '#2563eb',     // Blue-600
-    azulEscuro: '#1d4ed8', // Blue-700
-    azulClaro: '#60a5fa',  // Blue-400
-    verde: '#059669',     // Emerald-600
-    verdeEscuro: '#047857', // Emerald-700
-    roxo: '#7c3aed',     // Violet-600
-    roxoEscuro: '#6d28d9', // Violet-700
-    laranja: '#f97316',   // Orange-500
-    laranjaEscuro: '#ea580c', // Orange-600
+    azul: '#2563eb',     
+    azulEscuro: '#1d4ed8',
+    azulClaro: '#60a5fa',  
+    verde: '#059669',     
+    verdeEscuro: '#047857', 
+    roxo: '#7c3aed',   
+    roxoEscuro: '#6d28d9', 
+    laranja: '#f97316',  
+    laranjaEscuro: '#ea580c', 
   },
   neutras: {
     cinza50: '#f9fafb',
@@ -180,7 +177,6 @@ const PageLista = () => {
     cursosUnicos: [] as string[]
   });
 
-  // Configurações dos gráficos com cores do sistema
   const opcoesGraficoBarra = {
     responsive: true,
     maintainAspectRatio: false,
@@ -344,7 +340,7 @@ const PageLista = () => {
       percentual: (estudantes.size / pessoasAtendidas) * 100
     })).sort((a, b) => b.quantidade - a.quantidade);
 
-    // Distribuição por sexo (simulado - os dados não têm informação de sexo)
+    // Distribuição por sexo 
     const distribuicaoSexo = {
       feminino: 60, // Valor simulado
       masculino: 40 // Valor simulado
@@ -374,9 +370,9 @@ const PageLista = () => {
           cores.primaria.roxo,
           cores.primaria.laranja,
           cores.primaria.azulClaro,
-          '#f59e0b', // Amber-500
-          '#ec4899', // Pink-500
-          '#8b5cf6', // Violet-500
+          '#f59e0b', 
+          '#ec4899', 
+          '#8b5cf6', 
         ].slice(0, dadosCalculados.recursoPorTipo.length),
         borderColor: [
           cores.primaria.azulEscuro,
@@ -384,9 +380,9 @@ const PageLista = () => {
           cores.primaria.roxoEscuro,
           cores.primaria.laranjaEscuro,
           cores.primaria.azul,
-          '#d97706', // Amber-600
-          '#db2777', // Pink-600
-          '#7c3aed', // Violet-600
+          '#d97706', 
+          '#db2777', 
+          '#7c3aed', 
         ].slice(0, dadosCalculados.recursoPorTipo.length),
         borderWidth: 2,
         borderRadius: 6,
@@ -403,11 +399,11 @@ const PageLista = () => {
         label: 'Distribuição por Sexo',
         data: [dadosCalculados.distribuicaoSexo.feminino, dadosCalculados.distribuicaoSexo.masculino],
         backgroundColor: [
-          '#ec4899', // Pink-500
+          '#ec4899',
           cores.primaria.azul,
         ],
         borderColor: [
-          '#db2777', // Pink-600
+          '#db2777', 
           cores.primaria.azulEscuro,
         ],
         borderWidth: 2,
@@ -428,20 +424,20 @@ const PageLista = () => {
           cores.primaria.verde,
           cores.primaria.roxo,
           cores.primaria.laranja,
-          '#f59e0b', // Amber-500
-          '#ec4899', // Pink-500
-          '#8b5cf6', // Violet-500
-          '#06b6d4', // Cyan-500
+          '#f59e0b', 
+          '#ec4899', 
+          '#8b5cf6', 
+          '#06b6d4', 
         ].slice(0, dadosCalculados.percentualPorCurso.slice(0, 8).length),
         borderColor: [
           cores.primaria.azulEscuro,
           cores.primaria.verdeEscuro,
           cores.primaria.roxoEscuro,
           cores.primaria.laranjaEscuro,
-          '#d97706', // Amber-600
-          '#db2777', // Pink-600
-          '#7c3aed', // Violet-600
-          '#0891b2', // Cyan-600
+          '#d97706', 
+          '#db2777', 
+          '#7c3aed', 
+          '#0891b2', 
         ].slice(0, dadosCalculados.percentualPorCurso.slice(0, 8).length),
         borderWidth: 2,
       },
