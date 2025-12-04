@@ -1,7 +1,7 @@
 "use client"
 import withAuthorization from '@/components/AuthProvider/withAuthorization';
 import Cabecalho from '@/components/Layout/Interno/Cabecalho';
-import Tabela from '@/app/prae/pagamentos/pagamentos-pendentes/tabela/tabela';
+import Tabela from '@/app/prae/pagamentos/folha-de-pagamento/tabela/tabela';
 import { generica } from '@/utils/api';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -23,21 +23,14 @@ interface Pagamento {
   fimBeneficio: string;
 }
 
-interface PagamentoSelecionado {
-  id: string;
-  nome: string;
-  valor: number;
-  tipo: string;
-}
-
 const estrutura = {
   uri: "beneficio/pendentes",
   cabecalho: {
-    titulo: "Pagamentos Pendentes",
+    titulo: "Folha de pagamento",
     migalha: [
       { nome: 'Home', link: '/home' },
       { nome: 'Prae', link: '/prae' },
-      { nome: 'Pagamentos Pendentes', link: '/prae/pagamentos-pendentes' },
+      { nome: 'Folha de pagamento', link: '/prae/folha-de-pagamento' },
     ]
   },
   tabela: {
@@ -67,9 +60,6 @@ const PageLista = () => {
   const router = useRouter();
   const [dados, setDados] = useState<{ content: Pagamento[]; totalElements?: number }>({ content: [], totalElements: 0 });
   const [itensSelecionados, setItensSelecionados] = useState<Set<string>>(new Set());
-  const [modalAberto, setModalAberto] = useState(false);
-  const [pagamentosSelecionados, setPagamentosSelecionados] = useState<PagamentoSelecionado[]>([]);
-
 
   const chamarFuncao = (nomeFuncao: string, valor: any = null) => {
     switch (nomeFuncao) {
@@ -131,7 +121,6 @@ const PageLista = () => {
     }
   };
 
-
   const prepararPagamentoLote = () => {
     if (itensSelecionados.size === 0) {
       toast.error("Selecione pelo menos um pagamento");
@@ -160,40 +149,9 @@ const PageLista = () => {
       return;
     }
 
-    setPagamentosSelecionados(selecionados);
-    setModalAberto(true);
-  };
-
-
-  const confirmarPagamentos = async () => {
-    try {
-      const body = {
-        metodo: 'post',
-        uri: '/prae/pagamento',
-        data: pagamentosSelecionados.map(p => ({
-          beneficioId: p.id, // ou Number(p.id) se precisar ser numérico
-          valor: p.valor,
-          data: new Date().toISOString().split('T')[0] // Data atual no formato YYYY-MM-DD
-        }))
-      };
-
-      const response = await generica(body);
-
-      if (response?.data?.error) {
-        throw new Error(response.data.error.message);
-      }
-
-      const mensagemSucesso = pagamentosSelecionados.length === 1
-        ? "Pagamento processado!"
-        : `${pagamentosSelecionados.length} pagamentos processados!`;
-
-      toast.success(mensagemSucesso);
-      setModalAberto(false);
-      setItensSelecionados(new Set());
-      pesquisarRegistro();
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Erro ao processar pagamentos");
-    }
+    // Salvar no sessionStorage e navegar para a página de confirmação
+    sessionStorage.setItem('pagamentosSelecionados', JSON.stringify(selecionados));
+    router.push('/prae/pagamentos/confirmar-pagamento');
   };
 
   const editarRegistro = (item: Pagamento) => {
@@ -248,41 +206,6 @@ const PageLista = () => {
           itensSelecionados={itensSelecionados}
           onSelecionarItens={setItensSelecionados}
         />
-
-        {/* Modal de Confirmação */}
-        {modalAberto && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 w-full max-w-md">
-              <h3 className="text-lg font-bold mb-4">Confirmar Pagamentos</h3>
-              <p className="mb-4">Data: {new Date().toLocaleDateString('pt-BR')}</p>
-
-              <div className="max-h-60 overflow-y-auto mb-4 border rounded">
-                {pagamentosSelecionados.map((item) => (
-                  <div key={item.id} className="p-3 border-b">
-                    <p><strong>Nome:</strong> {item.nome}</p>
-                    <p><strong>Valor:</strong> R$ {item.valor.toFixed(2)}</p>
-                    <p><strong>Tipo:</strong> {item.tipo}</p>
-                  </div>
-                ))}
-              </div>
-
-              <div className="flex justify-end gap-3">
-                <button
-                  onClick={() => setModalAberto(false)}
-                  className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={confirmarPagamentos}
-                  className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-                >
-                  Confirmar ({pagamentosSelecionados.length})
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </main>
   );
