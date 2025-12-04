@@ -9,7 +9,7 @@ export type Campo = {
   obrigatorio?: boolean;
   bloqueado?: boolean;
   oculto?: boolean;
-  selectOptions?: { chave: any; valor: string }[] | null;
+  selectOptions?: { chave: any; valor: string; selecionado?: boolean }[] | null;
   max?: number;
   step?: number;
   allSelect?: boolean; // multi-select "selecionar tudo"

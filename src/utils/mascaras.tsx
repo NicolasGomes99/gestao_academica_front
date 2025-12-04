@@ -107,7 +107,7 @@ function maskValorMonetario(valor: number | string): string {
 
   if (typeof valor === "string") {
     // Remove qualquer ponto usado como separador de milhar e substitui vírgula decimal por ponto
-    const normalizado = valor.replace(/\./g, "").replace(",", ".");
+    const normalizado = valor.replace(",", ".");
     numero = parseFloat(normalizado);
   } else {
     numero = valor;
@@ -121,9 +121,19 @@ function maskValorMonetario(valor: number | string): string {
   });
 }
 
+/** 
+ * Função para converter data do formato ISO (YYYY-MM-DD) para o formato brasileiro (DD/MM/YYYY)
+ */
 
+function maskDataIsoBr(value: string): string {
+  // Padrão brasileiro DD/MM/YYYY
+  if (!value) return value;
 
-
+  let partes: string[] = [];
+  partes = value.split("-");
+  if (partes.length !== 3) return value;
+  return `${partes[2]}/${partes[1]}/${partes[0]}`;
+}
 
 /**
  * Função principal que decide qual máscara usar com base em `tipoMascara`.
@@ -149,6 +159,8 @@ export default function aplicarMascara(value: string, tipoMascara?: string): str
       return maskValorMonetario(value);
     case "hora":  // Adicionando a máscara de hora
       return maskHora(value);
+    case "dataisobr":
+      return maskDataIsoBr(value);
     default:
       return value; // se não for nenhum dos acima, retorna sem formatação
   }

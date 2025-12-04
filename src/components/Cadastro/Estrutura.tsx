@@ -215,6 +215,7 @@ const Cadastro = ({
                   setExpandedDocType={setExpandedDocType}
                   alterarInput={alterarInput}
                   alterarRatio={alterarRatio}
+                  onClickFuncao={() => chamarFuncao(campo?.funcao)}
                 />
               ))}
             </div>

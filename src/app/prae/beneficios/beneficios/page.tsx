@@ -35,7 +35,6 @@ const estrutura: any = {
       { nome: "Tipo", chave: "tipoBeneficio.tipo", tipo: "texto", selectOptions: null, sort: false, pesquisar: true },
       { nome: "Valor", chave: "tipoBeneficio.valorBeneficio", tipo: "texto", selectOptions: null, sort: false, pesquisar: true },
       { nome: "Natureza", chave: "tipoBeneficio.naturezaBeneficio", tipo: "texto", selectOptions: null, sort: false, pesquisar: true },
-      { nome: "Valor Benefício", chave: "valorPagamento", tipo: "texto", selectOptions: null, sort: false, pesquisar: true },
       { nome: "Início do Benefício", chave: "inicioBeneficio", tipo: "texto", selectOptions: null, sort: false, pesquisar: true },
       { nome: "Final do Benefício", chave: "fimBeneficio", tipo: "texto", selectOptions: null, sort: false, pesquisar: true },
       {
@@ -48,8 +47,7 @@ const estrutura: any = {
       { nome: "ações", chave: "acoes", tipo: "button", selectOptions: null, sort: false, pesquisar: false },
     ],
     acoes_dropdown: [ //botão de acoes de cada registro
-      { nome: 'Editar', chave: 'editar' }, //nome(string),chave(string),bloqueado(booleano)
-      { nome: 'Deletar', chave: 'deletar' },
+      { nome: 'Editar', chave: 'editar' }
     ]
   }
 
@@ -102,8 +100,9 @@ const PageLista = () => {
                 ...item.tipoBeneficio,
                 valorBeneficio: aplicarMascara(item.tipoBeneficio.valorBeneficio, 'valor')
               },
-              inicioBeneficio: aplicarMascara(item.inicioBeneficio, 'data'),
-              fimBeneficio: aplicarMascara(item.fimBeneficio, 'data'),
+              inicioBeneficio: aplicarMascara(item.inicioBeneficio, 'dataIsoBr'),
+              fimBeneficio: aplicarMascara(item.fimBeneficio, 'dataIsoBr'),
+              
             };
           });
           response.data.content = dadosTratados;

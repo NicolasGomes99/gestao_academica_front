@@ -12,6 +12,7 @@ import TabelaEstudantes from "@/components/Tabela/Estudantes/TabelaEstudante";
 import { set } from "zod";
 import Tabela from "@/components/Tabela/Estrutura";
 import { PagamentosBeneficio } from "@/types/pagamentoBeneficio.interface";
+import { all } from "axios";
 
 const cadastro = () => {
   const router = useRouter();
@@ -37,7 +38,6 @@ const cadastro = () => {
   useEffect(() => {
     if (dadosPreenchidos.tipoBeneficioId) {
       let valor = tipoBeneficio?.filter((tipo) => tipo.id == dadosPreenchidos?.tipoBeneficioId)[0]?.valorBeneficio;
-      valor = aplicarMascara(valor, "valor");
       setDadosPreenchidos((prev: any) => ({ ...prev, valorBeneficio: valor }));
     } else {
       setDadosPreenchidos((prev: any) => ({
@@ -99,7 +99,7 @@ const cadastro = () => {
           nome: "Remover Estudante",
           tipo: "button",
           funcao: "desselecionarEstudante",
-          visivel: estudanteSelecionado && !isEditMode,
+          visivel: estudanteSelecionado,
         },
         {
           chave: "estudanteId",
@@ -117,21 +117,20 @@ const cadastro = () => {
             dadosPreenchidos?.tipoBeneficioId
           ),
           mensagem: "Selecione",
-          obrigatorio: false, // Alterado para não obrigatório inicialmente
+          obrigatorio: true, // Alterado para não obrigatório inicialmente
           bloqueado: isEditMode,
           //visivel: tipoBeneficioSelecionado === "beneficio" // Mostrar apenas quando for auxílio
         },
         {
           line: 2,
           colSpan: "md:col-span-1",
-          nome: "Valor da Benefício",
+          nome: "Valor do Benefício",
           chave: "valorBeneficio",
           tipo: "money-brl",
-          mensagem: "Digite o valor",
-          obrigatorio: true,
-          bloqueado: false,
-          mode: "decimal",       // ou "cents" se preferir armazenar em centavos
-          allowNegative: false,
+          visivel: tipoBeneficioSelecionado !== null,
+          obrigatorio: false,
+          bloqueado: true,
+          mode: "decimal",
         },
         {
           line: 3,
@@ -173,11 +172,11 @@ const cadastro = () => {
         {
           line: 5,
           colSpan: "md:col-span-1",
-          nome: "Documentos",
+          nome: "Termo",
           chave: "documentos",
           tipo: "documento", // ou outro tipo apropriado
-          mensagem: "Anexe os documentos",
-          obrigatorio: false,
+          mensagem: "Anexe o documento",
+          obrigatorio: true,
           multiple: false,
           bloqueado: isEditMode,
         },
@@ -235,10 +234,44 @@ const cadastro = () => {
     },
   };
 
+  const verificarCamposObrigatorios = (): boolean => {
+    let camposValidos = true;
+    estrutura.cadastro.campos.forEach((campo: any) => {
+      if (campo?.obrigatorio) {
+        const valorCampo = dadosPreenchidos[campo.chave];
+        if (
+          valorCampo === undefined ||
+          valorCampo === null ||
+          (typeof valorCampo === "string" && valorCampo.trim() === "") ||
+          (Array.isArray(valorCampo) && valorCampo.length === 0)
+        ) {
+          toast.error(`O campo "${campo.nome}" é obrigatório.`, {
+            position: "top-right",
+          });
+          camposValidos = false;
+        }
+      }
+    });
+    if (dadosPreenchidos.fimBeneficio && dadosPreenchidos.inicioBeneficio) {
+      const dataInicio = new Date(dadosPreenchidos.inicioBeneficio);
+      const dataFim = new Date(dadosPreenchidos.fimBeneficio);
+      if (dataFim < dataInicio) {
+        toast.error(
+          `A data de fim do benefício não pode ser anterior à data de início.`,
+          {
+            position: "top-right",
+          }
+        );
+        camposValidos = false;
+      }
+    }
+    return camposValidos;
+  };
+
   const chamarFuncao = async (nomeFuncao = "", valor: any = null) => {
     switch (nomeFuncao) {
       case "salvar":
-        await salvarRegistro(valor);
+          await salvarRegistro(valor);
         break;
       case "voltar":
         voltarRegistro();
@@ -274,35 +307,39 @@ const cadastro = () => {
   };
 
   function buildFormData(): any {
-    const fd = new FormData();
-    if (!dadosPreenchidos.estudanteId) {
-      toast.error("Selecione um estudante antes de salvar o benefício.", {
-        position: "top-right",
-      });
-      return undefined;
-    }
-    fd.append("estudanteId", dadosPreenchidos.estudanteId.toString());
-    if (Array.isArray(dadosPreenchidos.documentos)) {
-      dadosPreenchidos.documentos.forEach((file: string | Blob) =>
-        fd.append("termo", file)
+    if (verificarCamposObrigatorios()) {
+      const fd = new FormData();
+      if (!dadosPreenchidos.estudanteId) {
+        toast.error("Selecione um estudante antes de salvar o benefício.", {
+          position: "top-right",
+        });
+        return undefined;
+      }
+      fd.append("estudanteId", dadosPreenchidos.estudanteId.toString());
+      if (Array.isArray(dadosPreenchidos.documentos)) {
+        dadosPreenchidos.documentos.forEach((file: string | Blob) =>
+          fd.append("termo", file)
+        );
+      }
+      fd.append(
+        "tipoBeneficioId",
+        dadosPreenchidos.tipoBeneficioId?.toString() || ""
       );
-    }
-    fd.append(
-      "tipoBeneficioId",
-      dadosPreenchidos.tipoBeneficioId?.toString() || ""
-    );
-    fd.append("parecerTermino", dadosPreenchidos.parecerTermino || "");
-    fd.append(
-      "horasBeneficio",
-      dadosPreenchidos.horasBeneficio?.toString() || ""
-    );
-    fd.append("inicioBeneficio", dadosPreenchidos.inicioBeneficio || "");
-    fd.append("fimBeneficio", dadosPreenchidos.fimBeneficio || "");
-    fd.append(
-      "valorPagamento",
-      tipoBeneficioSelecionado?.valorBeneficio || "1"
-    );
-    return fd;
+      fd.append("parecerTermino", dadosPreenchidos.parecerTermino || "");
+      fd.append(
+        "horasBeneficio",
+        dadosPreenchidos.horasBeneficio?.toString() || ""
+      );
+      fd.append("inicioBeneficio", dadosPreenchidos.inicioBeneficio || "");
+      fd.append("fimBeneficio", dadosPreenchidos.fimBeneficio || "");
+      fd.append(
+        "valorPagamento",
+        tipoBeneficioSelecionado?.valorBeneficio || "1"
+      );
+      return fd;
+
+    } else 
+      return undefined
   }
 
   const voltarRegistro = () => {
@@ -318,7 +355,6 @@ const cadastro = () => {
         data: {},
       };
       const response = await generica(body);
-      console.log(response?.data);
       if (response && response.data.errors != undefined) {
         toast("Erro. Tente novamente!", { position: "bottom-left" });
       } else if (response && response.data.error != undefined) {
@@ -388,7 +424,7 @@ const cadastro = () => {
                 ),
               },
             },
-            data: new Date(item.data).toJSON().split("T")[0],
+            data: aplicarMascara(item.data, "dataIsoBr"),
           }));
         setPagamentosEfetuados(filteredData);
       }
@@ -478,6 +514,7 @@ const cadastro = () => {
         position: "top-left",
       });
     }
+    
   };
 
   const editarRegistro = async (item: any) => {
@@ -566,7 +603,7 @@ const cadastro = () => {
 
   // Filtra os campos com base na visibilidade
   const camposFiltrados = estrutura.cadastro.campos.filter((campo: any) => {
-    return campo.visivel === undefined || campo.visivel;
+    return campo.visivel || campo.visivel === undefined;
   });
 
   return (
@@ -584,8 +621,12 @@ const cadastro = () => {
             />
           </>
         )}
-
-        <Tabela dados={pagamentosEfetuados} estrutura={estrutura} />
+        {pagamentosEfetuados.length > 0 && isEditMode && (
+          <>
+            <h2 className="text-3xl mt-10 mb-4">Pagamentos Efetuados</h2>
+            <Tabela dados={pagamentosEfetuados} estrutura={estrutura} />
+          </>
+        )}
         <Cadastro
           estrutura={{
             ...estrutura,

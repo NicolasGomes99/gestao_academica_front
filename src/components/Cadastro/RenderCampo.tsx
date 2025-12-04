@@ -34,9 +34,10 @@ interface RenderCampoProps {
   setExpandedDocType: (v: string | null) => void;
   alterarInput: (e: any) => void;
   alterarRatio: (e: any) => void;
+  onClickFuncao?: () => void;
 }
 
-const RenderCampo: React.FC<RenderCampoProps> = ({ campo: e, dados, setDados, photoPreview, setPhotoPreview, expandedDocUrl, setExpandedDocUrl, expandedDocType, setExpandedDocType, alterarInput, alterarRatio }) => {
+const RenderCampo: React.FC<RenderCampoProps> = ({ campo: e, dados, setDados, photoPreview, setPhotoPreview, expandedDocUrl, setExpandedDocUrl, expandedDocType, setExpandedDocType, alterarInput, alterarRatio, onClickFuncao }) => {
   const valor = (chave: string) => getNestedValue(dados, chave);
 
   const handleFileChangeFoto = (event: React.ChangeEvent<HTMLInputElement>, chave: string) => {
@@ -256,6 +257,10 @@ const RenderCampo: React.FC<RenderCampoProps> = ({ campo: e, dados, setDados, ph
 
       {e.tipo === 'file' && (
         <FileInput dir="importacao" name={e.chave} onChange={alterarInput} label={e.nome} required={!!e.obrigatorio} message={e.mensagem ?? ''} disabled={!!e.bloqueado} />
+      )}
+
+      {e.tipo === 'button' && (
+        <button type="button" name={e.chave} onClick={onClickFuncao ? () => { onClickFuncao(); } : undefined} className="bg-primary-500 hover:bg-primary-700 text-white px-4 py-2 rounded text-body-medium disabled:opacity-50 mt-6 mb-0" disabled={!!e.bloqueado}>{e.nome}</button>
       )}
 
       {[ 'text','select','boolean','date','year','multi-select','multi-select2','cpf','password','email','display-crimes-list','file','textarea','number','rich-text','foto','documento','radio-group','date-multiple','ratio','subtitulo','money-brl'].indexOf(e.tipo) === -1 && <div className="mt-1 p-2 w-full" />}

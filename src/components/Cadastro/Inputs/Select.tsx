@@ -26,6 +26,7 @@ export default function Select({
   };
 
   const normalizedValue = value === undefined || value === null ? '' : String(value);
+  let selectedValue = options?.find((option) => option?.selecionado);
 
   return (
     <div className="space-y-2">
@@ -37,7 +38,7 @@ export default function Select({
       	id={name}
       	name={name}
       	className="mt-1 p-2 w-full border rounded-md bg-white"
-      	value={normalizedValue}
+      	value={selectedValue ? String(selectedValue.chave) : normalizedValue}
       	onChange={handleSelectChange}
         disabled={disabled}
         required={required}

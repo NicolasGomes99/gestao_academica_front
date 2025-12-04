@@ -14,8 +14,6 @@ const cadastro = () => {
   const { id } = useParams();
   // Inicializamos com um objeto contendo 'endereco' para evitar problemas
   const [dadosPreenchidos, setDadosPreenchidos] = useState<any>({ endereco: {} });
-  const [unidadesGestoras, setUnidadesGestoras] = useState<any[]>([]);
-  const [lastMunicipioQuery, setLastMunicipioQuery] = useState("");
   const isEditMode = id && id !== "criar";
 
   const getOptions = (lista: any[], selecionado: any) => {
@@ -23,16 +21,9 @@ const cadastro = () => {
     const options = lista.map((item) => ({
       chave: item.id, // ID do item (numérico, por exemplo)
       valor: item.nome, // Texto exibido no <option>
+      selecionado: selecionado !== undefined && item.nome === selecionado,
     }));
-
-    if (isEditMode && selecionado) {
-      const selectedId = Number(selecionado); // Converte para número, se necessário
-      const selectedOption = options.find((opt) => opt.chave === selectedId);
-      if (selectedOption) {
-        // Coloca a opção selecionada na frente do array
-        return [selectedOption, ...options.filter((opt) => opt.chave !== selectedId)];
-      }
-    }
+    console.log("DEBUG: Opções disponíveis:", options);
     return options;
   };
 
@@ -132,24 +123,58 @@ const cadastro = () => {
     router.push("/prae/beneficios/tipos");
   };
 
-  function transformarDados(item: any) {
-  if (dadosPreenchidos?.tipo && (dadosPreenchidos?.tipo.length > 50 || dadosPreenchidos?.tipo.length < 3)) {
-      toast.error("Tipo deve ter entre 3 e 50 caracteres.", { position: "top-left" });
-      return;
+  function validarDadosPreenchidos() {
+    let valido = true;
+
+    estrutura.cadastro.campos.forEach((campo: any) => {
+      if (campo?.obrigatorio) {
+        const valorCampo = dadosPreenchidos[campo.chave];
+        if (
+          valorCampo === undefined ||
+          valorCampo === null ||
+          (typeof valorCampo === "string" && valorCampo.trim() === "") ||
+          (Array.isArray(valorCampo) && valorCampo.length === 0)
+        ) {
+          toast.error(`O campo "${campo.nome}" é obrigatório.`, {
+            position: "top-right",
+          });
+          valido = false;
+        }
+      }
+    });
+
+    if (dadosPreenchidos?.tipo && (dadosPreenchidos?.tipo.length > 50 || dadosPreenchidos?.tipo.length < 3)) {
+      toast.error("Tipo deve ter entre 3 e 50 caracteres.", { position: "top-right" });
+      valido = false;
     }
     if (dadosPreenchidos?.descricao && (dadosPreenchidos?.descricao.length > 200 || dadosPreenchidos?.descricao.length < 3)) {
-      toast.error("Descrição deve ter entre 3 e 200 caracteres.", { position: "top-left" });
-      return;
+      toast.error("Descrição deve ter entre 3 e 200 caracteres.", { position: "top-right" });
+      valido = false;
     }
-  if (!item) return null;
-  console.log("DEBUG: Transformando dados:", item.valorBeneficio.toString().replace(',', '.'));
-  return {
-    tipo: item.tipo,
-    naturezaBeneficio: item.naturezaBeneficio,
-    descricao: item.descricao,
-    valorBeneficio: item.valorBeneficio ? parseFloat(item.valorBeneficio.toString().replace(',', '.')) : 0,
-  };
-}
+
+    if(dadosPreenchidos?.valorBeneficio !== undefined){
+      const valor = parseFloat(dadosPreenchidos.valorBeneficio.toString().replace(',', '.'));
+      if (isNaN(valor) || valor <= 0) {
+        toast.error("Valor do benefício deve ser um número válido maior ou igual a zero.", { position: "top-right" });
+        valido = false;
+      }
+    }
+
+
+    return valido;
+  }
+
+  function transformarDados(item: any) {
+
+    if (!item || !validarDadosPreenchidos()) return null;
+    console.log("DEBUG: Transformando dados:", item.valorBeneficio.toString().replace(',', '.'));
+    return {
+      tipo: item.tipo,
+      naturezaBeneficio: item.naturezaBeneficio,
+      descricao: item.descricao,
+      valorBeneficio: item.valorBeneficio ? parseFloat(item.valorBeneficio.toString().replace(',', '.')) : 0,
+    };
+  }
 
   const salvarRegistro = async (item: any) => {
     const dataToSend = transformarDados(item);
