@@ -86,7 +86,7 @@ const cadastro = () => {
         },
       ],
       acoes: [
-        // { nome: "Cancelar", chave: "voltar", tipo: "botao" },
+         { nome: "Voltar", chave: "voltar", tipo: "botao" },
         // { nome: isEditMode ? "Salvar" : "Cadastrar", chave: "salvar", tipo: "submit" },
       ],
     },

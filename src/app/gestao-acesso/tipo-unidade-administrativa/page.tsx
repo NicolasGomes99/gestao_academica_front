@@ -101,8 +101,9 @@ const PageLista = () => {
             title: `Você deseja deletar o tipo de unidade administrativa ${item.nome}?`,
             text: "Essa ação não poderá ser desfeita",
             icon: "warning",
+            iconColor: "#9F2A1A",
             showCancelButton: true,
-            confirmButtonColor: "#1A759F",
+            confirmButtonColor: "#393C47",
             cancelButtonColor: "#9F2A1A",
 
             confirmButtonText: "Sim, quero deletar!",
@@ -135,6 +136,7 @@ const PageLista = () => {
                     Swal.fire({
                         title: "O tipo de unidade administrativa foi deletada com sucesso!",
                         icon: "success",
+                        confirmButtonColor: "#972E3F",
                         customClass: {
                             popup: "my-swal-popup",
                             title: "my-swal-title",

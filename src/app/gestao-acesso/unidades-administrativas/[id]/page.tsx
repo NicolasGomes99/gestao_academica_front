@@ -238,6 +238,7 @@ const cadastro = () => {
         Swal.fire({
           title: "Unidade gestora salvo com sucesso!",
           icon: "success",
+          confirmButtonColor: "#972E3F",
           customClass: {
             popup: "my-swal-popup",
             title: "my-swal-title",
@@ -417,7 +418,7 @@ const cadastro = () => {
         text: "Você está prestes a remover este gestor da unidade!",
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonColor: '#3085d6',
+        confirmButtonColor: '#393C47',
         cancelButtonColor: '#d33',
         confirmButtonText: 'Sim, desalocar!',
         cancelButtonText: 'Cancelar'
@@ -483,7 +484,7 @@ const cadastro = () => {
 
   return (
     <main className="flex flex-wrap justify-center mx-auto">
-      <div className="w-full max-w-screen-2xl px-4 sm:px-6 md:px-8 lg:px-10 py-6">
+      <div className="w-full md:w-11/12 lg:w-10/12 2xl:w-3/4 max-w-6xl p-4 pt-10 md:pt-12 md:pb-12">
         <div className="rounded-lg shadow-sm p-4 md:p-6">
           <Cabecalho dados={estrutura.cabecalho} />
           <Cadastro

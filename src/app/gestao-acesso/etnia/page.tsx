@@ -104,10 +104,11 @@ const PageLista = () => {
       title: `Você deseja deletar a etnia:  ${item.etnia}?`,
       text: "Essa ação não poderá ser desfeita",
       icon: "warning",
+      iconColor: "#972E3F",
       showCancelButton: true,
 
       // Ajuste as cores conforme seu tema
-      confirmButtonColor: "#1A759F",
+      confirmButtonColor: "#393C47",
       cancelButtonColor: "#9F2A1A",
 
       confirmButtonText: "Sim, quero deletar!",
@@ -141,6 +142,7 @@ const PageLista = () => {
           pesquisarRegistro();
           Swal.fire({
             title: "Curso deletado com sucesso!",
+            confirmButtonColor: "#972E3F",
             icon: "success"
           });
         }

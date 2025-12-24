@@ -3,7 +3,7 @@ import withAuthorization from "@/components/AuthProvider/withAuthorization";
 import Cadastro from "@/components/Cadastro/Estrutura";
 import Cabecalho from "@/components/Layout/Interno/Cabecalho";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { toast } from "react-toastify";
 import Swal from "sweetalert2";
 import { useEnderecoByCep } from "@/utils/brasilianStates";
@@ -13,20 +13,26 @@ const cadastro = () => {
   const router = useRouter();
   const { id } = useParams();
 
-  const [dadosPreenchidos, setDadosPreenchidos] = useState<any>({ endereco: {} });
+  const [dadosPreenchidos, setDadosPreenchidos] = useState<any>({ 
+    nome: "",
+    numeroPeriodos: ""
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const isEditMode = id && id !== "criar";
+  
+  // Referência para controlar toasts ativos
+  const activeToastIds = useRef<Set<string>>(new Set());
 
   const getOptions = (lista: any[], selecionado: any) => {
     if (!Array.isArray(lista) || lista.length === 0) return [];
     const options = lista.map((item) => ({
-      chave: item.id, // ID do item (numérico, por exemplo)
-      valor: item.nome, // Texto exibido no <option>
+      chave: item.id,
+      valor: item.nome,
     }));
     if (isEditMode && selecionado) {
-      const selectedId = Number(selecionado); // Converte para número, se necessário
+      const selectedId = Number(selecionado);
       const selectedOption = options.find((opt) => opt.chave === selectedId);
       if (selectedOption) {
-        // Coloca a opção selecionada na frente do array
         return [selectedOption, ...options.filter((opt) => opt.chave !== selectedId)];
       }
     }
@@ -49,7 +55,6 @@ const cadastro = () => {
     },
     cadastro: {
       campos: [
-        // Linha 1
         {
           line: 1,
           colSpan: "md:col-span-1",
@@ -60,6 +65,7 @@ const cadastro = () => {
           obrigatorio: true,
           minLength: 1,
           maxLength: 100,
+          placeholder: "Ex: Engenharia de Software",
           validacao: (valor: string) => {
             if (!valor || valor.trim().length === 0) {
               return "O nome do curso é obrigatório";
@@ -83,6 +89,7 @@ const cadastro = () => {
           obrigatorio: true,
           min: 1,
           step: 1,
+          placeholder: "Ex: 8",
         },
       ],
       acoes: [
@@ -93,9 +100,57 @@ const cadastro = () => {
   };
 
   /**
-   * Chama funções de acordo com o botão clicado
+   * Função auxiliar para mostrar toast com controle de duplicação
    */
+  const showToast = (type: 'error' | 'success' | 'info' | 'warning', message: string, options?: any) => {
+    const toastId = `${type}-${message.substring(0, 50)}-${Date.now()}`;
+    
+    // Remove toasts antigos do mesmo tipo
+    activeToastIds.current.forEach(id => {
+      if (id.startsWith(`${type}-`)) {
+        toast.dismiss(id);
+        activeToastIds.current.delete(id);
+      }
+    });
+
+    // Adiciona novo toast
+    activeToastIds.current.add(toastId);
+    
+    const toastOptions = {
+      position: "top-left" as const,
+      autoClose: type === 'error' ? 7000 : 5000,
+      toastId,
+      onClose: () => activeToastIds.current.delete(toastId),
+      ...options
+    };
+
+    switch (type) {
+      case 'error':
+        toast.error(message, toastOptions);
+        break;
+      case 'success':
+        toast.success(message, toastOptions);
+        break;
+      case 'info':
+        toast.info(message, toastOptions);
+        break;
+      case 'warning':
+        toast.warning(message, toastOptions);
+        break;
+    }
+  };
+
+  /**
+   * Limpa todos os toasts
+   */
+  const clearAllToasts = () => {
+    toast.dismiss();
+    activeToastIds.current.clear();
+  };
+
   const chamarFuncao = async (nomeFuncao = "", valor: any = null) => {
+    clearAllToasts();
+    
     switch (nomeFuncao) {
       case "salvar":
         await salvarRegistro(valor);
@@ -112,57 +167,119 @@ const cadastro = () => {
   };
 
   const voltarRegistro = () => {
+    clearAllToasts();
     router.push("/gestao-acesso/cursos");
   };
 
-  /**
-   * Salva o registro via POST, transformando os dados para que os itens de endereço
-   * fiquem agrupados em um objeto 'endereco'.
-   */
-  const salvarRegistro = async (item: any) => {
+
+  const validarDados = (item: any): { isValid: boolean; message?: string } => {
+    clearAllToasts();
+
     // Validação do nome
     if (!item.nome || item.nome.trim().length === 0) {
-      toast.error("O nome do curso é obrigatório", {
-        position: "top-left",
-      });
-      return;
+      return { isValid: false, message: "O nome do curso é obrigatório" };
     }
 
-    if (item.nome.length > 100) {
-      toast.error("O nome do curso deve ter no máximo 100 caracteres", {
-        position: "top-left",
-      });
-      return;
+    const nomeTrimmed = item.nome.trim();
+    
+    if (nomeTrimmed.length > 100) {
+      return { isValid: false, message: "O nome do curso deve ter no máximo 100 caracteres" };
     }
 
-    if (item.nome.length < 1) {
-      toast.error("O nome do curso deve ter pelo menos 1 caractere", {
-        position: "top-left",
-      });
-      return;
+    if (nomeTrimmed.length < 2) {
+      return { isValid: false, message: "O nome do curso deve ter pelo menos 2 caracteres" };
+    }
+
+    // Validação do número de períodos
+    if (!item.numeroPeriodos && item.numeroPeriodos !== 0) {
+      return { isValid: false, message: "A quantidade de períodos é obrigatória" };
     }
 
     const numero = Number(item.numeroPeriodos);
-    if (!Number.isFinite(numero) || numero <= 0) {
-      toast.error("A quantidade de períodos deve ser um número maior que zero!", {
-        position: "top-left",
-      });
+    
+    if (isNaN(numero)) {
+      return { isValid: false, message: "A quantidade de períodos deve ser um número válido" };
+    }
+
+    if (!Number.isInteger(numero)) {
+      return { isValid: false, message: "A quantidade de períodos deve ser um número inteiro" };
+    }
+
+    if (numero <= 0) {
+      return { isValid: false, message: "A quantidade de períodos deve ser maior que zero" };
+    }
+
+    if (numero > 20) {
+      return { isValid: false, message: "A quantidade de períodos não pode exceder 20" };
+    }
+
+    return { isValid: true };
+  };
+
+  const salvarRegistro = async (item: any) => {
+    // Evita múltiplos envios simultâneos
+    if (isSubmitting) {
+      showToast('info', 'Aguarde, processando sua solicitação...');
       return;
     }
 
+    clearAllToasts();
+
+    // Validação local
+    const validacao = validarDados(item);
+    if (!validacao.isValid) {
+      showToast('error', validacao.message!);
+      return;
+    }
+
+    setIsSubmitting(true);
+
     try {
+      const dadosEnvio = {
+        nome: item.nome.trim(),
+        numeroPeriodos: Number(item.numeroPeriodos),
+        ...(isEditMode && { id: item.id })
+      };
+
       const body = {
         metodo: `${isEditMode ? "patch" : "post"}`,
         uri: "/auth/" + `${isEditMode ? estrutura.uri + "/" + item.id : estrutura.uri}`,
         params: {},
-        data: item,
+        data: dadosEnvio,
       };
+
       const response = await generica(body);
 
       if (!response || response.status < 200 || response.status >= 300) {
-        if (response) {
-          console.error("DEBUG: Status de erro:", response.status, 'statusText' in response ? response.statusText : "Sem texto de status");
+        let mensagemErro = `Erro ao ${isEditMode ? "editar" : "cadastrar"} curso.`;
+        
+        switch (response?.status) {
+          case 400:
+            mensagemErro = "Dados inválidos enviados. Verifique as informações.";
+            break;
+          case 401:
+            mensagemErro = "Sessão expirada. Faça login novamente.";
+            break;
+          case 403:
+            mensagemErro = "Você não tem permissão para realizar esta ação.";
+            break;
+          case 404:
+            mensagemErro = isEditMode ? "Curso não encontrado." : "Recurso não encontrado.";
+            break;
+          case 409:
+            mensagemErro = "Já existe um curso com este nome.";
+            break;
+          case 422:
+            mensagemErro = "Dados inválidos. Verifique os campos obrigatórios.";
+            break;
+          case 500:
+            mensagemErro = "Erro interno do servidor. Tente novamente em alguns minutos.";
+            break;
+          default:
+            mensagemErro = response?.status ? `Erro HTTP ${response.status}` : "Erro de conexão com o servidor.";
         }
+
+        showToast('error', mensagemErro);
         return;
       }
 
@@ -172,37 +289,51 @@ const cadastro = () => {
             ? response.data.errors[campoErro].join(', ')
             : response.data.errors[campoErro];
 
-          toast.error(`Erro em ${campoErro}: ${mensagemErro}`, {
-            position: "top-left",
-          });
+          showToast('error', `${campoErro}: ${mensagemErro}`);
         });
-      } else if (response.data?.error) {
-        // Captura mensagens de erro específicas do servidor
-        const mensagemErro = response.data.error.message || response.data.error;
-        toast.error(mensagemErro, { position: "top-left" });
-      } else if (response.data?.message) {
-        // Se o servidor retornar uma mensagem específica
-        toast.error(response.data.message, { position: "top-left" });
-      } else {
-        Swal.fire({
-          title: "Curso salvo com sucesso!",
-          icon: "success",
-          customClass: {
-            popup: "my-swal-popup",
-            title: "my-swal-title",
-            htmlContainer: "my-swal-html",
-          },
-          confirmButtonColor: "#125371", // Cor de fundo do botão
-          confirmButtonText: "OK", // Texto do botão
-        }).then((result) => {
-          if (result.isConfirmed) {
-            chamarFuncao("voltar");
-          }
-        });
+        return;
       }
+
+      if (response.data?.error) {
+        const mensagemErro = response.data.error.message || response.data.error;
+        showToast('error', mensagemErro);
+        return;
+      }
+
+      if (response.data?.message) {
+        showToast('error', response.data.message);
+        return;
+      }
+
+      clearAllToasts();
+      
+      await Swal.fire({
+        title: isEditMode ? "Curso editado com sucesso!" : "Curso cadastrado com sucesso!",
+        icon: "success",
+        customClass: {
+          popup: "my-swal-popup",
+          title: "my-swal-title",
+          htmlContainer: "my-swal-html",
+        },
+        confirmButtonColor: "#972E3F",
+        confirmButtonText: "OK",
+        showCancelButton: false,
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        timer: 3000,
+        timerProgressBar: true,
+      }).then((result) => {
+        if (result.isConfirmed || result.dismiss === Swal.DismissReason.timer) {
+          clearAllToasts();
+          chamarFuncao("voltar");
+        }
+      });
+
     } catch (error: any) {
       console.error("DEBUG: Erro ao salvar registro:", error);
 
+      let mensagemErro = "Erro ao salvar registro. Tente novamente!";
+      
       if (error.response?.data) {
         const errorData = error.response.data;
 
@@ -212,26 +343,27 @@ const cadastro = () => {
               ? errorData.errors[campoErro].join(', ')
               : errorData.errors[campoErro];
 
-            toast.error(`Erro em ${campoErro}: ${mensagemErro}`, {
-              position: "top-left",
-            });
+            showToast('error', `${campoErro}: ${mensagemErro}`);
           });
+          return;
         } else if (errorData.error) {
-          toast.error(errorData.error.message || errorData.error, {
-            position: "top-left"
-          });
+          mensagemErro = errorData.error.message || errorData.error;
         } else if (errorData.message) {
-          toast.error(errorData.message, { position: "top-left" });
+          mensagemErro = errorData.message;
         }
-      } else {
-        toast.error("Erro ao salvar registro. Tente novamente!", {
-          position: "top-left"
-        });
+      } else if (error.message) {
+        mensagemErro = `Erro: ${error.message}`;
       }
+
+      showToast('error', mensagemErro);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const editarRegistro = async (item: any) => {
+    clearAllToasts();
+    
     try {
       const body = {
         metodo: "get",
@@ -239,8 +371,34 @@ const cadastro = () => {
         params: {},
         data: item,
       };
+      
       const response = await generica(body);
-      if (!response) throw new Error("Resposta inválida do servidor.");
+      
+      if (!response) {
+        showToast('error', "Erro de conexão ao carregar curso.");
+        return;
+      }
+
+      if (response.status < 200 || response.status >= 300) {
+        let mensagemErro = "Erro ao carregar dados do curso.";
+        
+        switch (response.status) {
+          case 404:
+            mensagemErro = "Curso não encontrado.";
+            break;
+          case 401:
+            mensagemErro = "Sessão expirada. Faça login novamente.";
+            break;
+          case 403:
+            mensagemErro = "Você não tem permissão para acessar este recurso.";
+            break;
+          default:
+            mensagemErro = `Erro HTTP ${response.status}`;
+        }
+        
+        showToast('error', mensagemErro);
+        return;
+      }
 
       if (response.data?.errors) {
         Object.keys(response.data.errors).forEach((campoErro) => {
@@ -248,41 +406,57 @@ const cadastro = () => {
             ? response.data.errors[campoErro].join(', ')
             : response.data.errors[campoErro];
 
-          toast.error(`Erro em ${campoErro}: ${mensagemErro}`, {
-            position: "top-left",
-          });
+          showToast('error', `${campoErro}: ${mensagemErro}`);
         });
-      } else if (response.data?.error) {
-        toast.error(response.data.error.message || response.data.error, {
-          position: "top-left"
-        });
-      } else {
-        setDadosPreenchidos(response.data);
+        return;
       }
+
+      if (response.data?.error) {
+        showToast('error', response.data.error.message || response.data.error);
+        return;
+      }
+
+      setDadosPreenchidos({
+        id: response.data.id,
+        nome: response.data.nome || "",
+        numeroPeriodos: response.data.numeroPeriodos || ""
+      });
+
     } catch (error: any) {
       console.error("DEBUG: Erro ao localizar registro:", error);
 
+      let mensagemErro = "Erro ao carregar curso. Tente novamente!";
+      
       if (error.response?.data) {
         const errorData = error.response.data;
         if (errorData.error) {
-          toast.error(errorData.error.message || errorData.error, {
-            position: "top-left"
-          });
+          mensagemErro = errorData.error.message || errorData.error;
         } else if (errorData.message) {
-          toast.error(errorData.message, { position: "top-left" });
+          mensagemErro = errorData.message;
         }
-      } else {
-        toast.error("Erro ao localizar registro. Tente novamente!", {
-          position: "top-left"
-        });
+      } else if (error.message) {
+        mensagemErro = `Erro: ${error.message}`;
       }
+
+      showToast('error', mensagemErro);
     }
   };
 
   useEffect(() => {
+    clearAllToasts();
+    
     if (id && id !== "criar") {
       chamarFuncao("editar", id);
+    } else {
+      setDadosPreenchidos({ 
+        nome: "",
+        numeroPeriodos: ""
+      });
     }
+
+    return () => {
+      clearAllToasts();
+    };
   }, [id]);
 
   return (

@@ -168,6 +168,7 @@ const cadastro = () => {
                 title: "Gestor alocado com sucesso!",
                 icon: "success",
                 confirmButtonText: "OK",
+                confirmButtonColor: "#972E3F",
             });
 
             chamarFuncao("voltar");
