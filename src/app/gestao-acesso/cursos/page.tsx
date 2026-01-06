@@ -104,10 +104,11 @@ const PageLista = () => {
       title: `Você deseja deletar o curso ${item.nome}?`,
       text: "Essa ação não poderá ser desfeita",
       icon: "warning",
+      iconColor: "#9F2A1A",
       showCancelButton: true,
 
       // Ajuste as cores conforme seu tema
-      confirmButtonColor: "#1A759F",
+      confirmButtonColor: "#393C47",
       cancelButtonColor: "#9F2A1A",
 
       confirmButtonText: "Sim, quero deletar!",
@@ -142,7 +143,7 @@ const PageLista = () => {
           Swal.fire({
             title: "Curso deletado com sucesso!",
             icon: "success",
-            confirmButtonColor: "#125371", // Cor do botão OK
+            confirmButtonColor: "#972E3F", 
             customClass: {
               popup: "my-swal-popup",
               title: "my-swal-title",

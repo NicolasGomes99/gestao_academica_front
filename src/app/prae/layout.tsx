@@ -103,8 +103,8 @@ export default function PraeLayout({ children }: { children: React.ReactNode }) 
           roles: isPraeAccess ? ["gestor"] : ["aluno"],
           subItems: [
             {
-              label: "Pagamentos Pendentes",
-              route: "/prae/pagamentos/pagamentos-pendentes",
+              label: "Folha de pagamento",
+              route: "/prae/pagamentos/folha-de-pagamento",
               icon: <PendingActions fontSize="small" className="text-white" />,
               roles: isPraeAccess ? ["gestor"] : [""],
             },
@@ -120,12 +120,12 @@ export default function PraeLayout({ children }: { children: React.ReactNode }) 
               icon: <AccountBalanceWallet fontSize="small" className="text-white" />,
               roles: ["aluno"],
             },
-            {
+            /* {
               label: "Relatório Financeiro",
               route: "/prae/pagamentos/relatorio-financeiro",
               icon: <Assessment fontSize="small" className="text-white" />,
               roles: isPraeAccess ? ["gestor"] : [""],
-            },
+            }, */
           ],
         },
         {

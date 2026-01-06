@@ -306,41 +306,63 @@ const cadastro = () => {
     }
   };
 
-  function buildFormData(): any {
-    if (verificarCamposObrigatorios()) {
-      const fd = new FormData();
-      if (!dadosPreenchidos.estudanteId) {
-        toast.error("Selecione um estudante antes de salvar o benefício.", {
-          position: "top-right",
-        });
-        return undefined;
-      }
-      fd.append("estudanteId", dadosPreenchidos.estudanteId.toString());
-      if (Array.isArray(dadosPreenchidos.documentos)) {
-        dadosPreenchidos.documentos.forEach((file: string | Blob) =>
-          fd.append("termo", file)
-        );
-      }
-      fd.append(
-        "tipoBeneficioId",
-        dadosPreenchidos.tipoBeneficioId?.toString() || ""
-      );
-      fd.append("parecerTermino", dadosPreenchidos.parecerTermino || "");
-      fd.append(
-        "horasBeneficio",
-        dadosPreenchidos.horasBeneficio?.toString() || ""
-      );
-      fd.append("inicioBeneficio", dadosPreenchidos.inicioBeneficio || "");
-      fd.append("fimBeneficio", dadosPreenchidos.fimBeneficio || "");
-      fd.append(
-        "valorPagamento",
-        tipoBeneficioSelecionado?.valorBeneficio || "1"
-      );
-      return fd;
+  function toYearMonth(date: string | undefined | null): string {
+  if (!date) return "";
+  return date.toString().substring(0, 7);
+}
 
-    } else 
-      return undefined
+
+  function buildFormData(): any {
+  if (!verificarCamposObrigatorios()) return undefined;
+
+  const fd = new FormData();
+
+  if (!dadosPreenchidos.estudanteId) {
+    toast.error("Selecione um estudante antes de salvar o benefício.", {
+      position: "top-right",
+    });
+    return undefined;
   }
+
+  fd.append("estudanteId", dadosPreenchidos.estudanteId.toString());
+
+  if (Array.isArray(dadosPreenchidos.documentos)) {
+    dadosPreenchidos.documentos.forEach((file: File) =>
+      fd.append("termo", file)
+    );
+  }
+
+  fd.append(
+    "tipoBeneficioId",
+    dadosPreenchidos.tipoBeneficioId?.toString() || ""
+  );
+
+  fd.append("parecerTermino", dadosPreenchidos.parecerTermino || "");
+
+  fd.append(
+    "horasBeneficio",
+    dadosPreenchidos.horasBeneficio?.toString() || ""
+  );
+
+  // 🔥 CORREÇÃO PRINCIPAL (YearMonth)
+  fd.append(
+    "inicioBeneficio",
+    toYearMonth(dadosPreenchidos.inicioBeneficio)
+  );
+
+  fd.append(
+    "fimBeneficio",
+    toYearMonth(dadosPreenchidos.fimBeneficio)
+  );
+
+  fd.append(
+    "valorPagamento",
+    tipoBeneficioSelecionado?.valorBeneficio?.toString() || "0"
+  );
+
+  return fd;
+}
+
 
   const voltarRegistro = () => {
     router.push("/prae/beneficios/beneficios");

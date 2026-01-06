@@ -17,7 +17,7 @@
     "@mui/icons-material": "^6.4.8",
     "@mui/material": "^6.4.8",
     "axios": "^1.6.7",
-    "chart.js": "^4.4.3",
+    "chart.js": "^4.5.1",
     "chartjs-plugin-annotation": "^3.1.0",
     "frontend": "file:",
     "gestao_academica_front_r": "file:",

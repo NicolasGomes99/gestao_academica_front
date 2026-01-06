@@ -408,8 +408,9 @@ const cadastro = () => {
       title: `Você deseja desalocar o funcionário ${item.funcionario?.nome ?? item.nome}?`,
       text: "Essa ação removerá o vínculo com a unidade administrativa",
       icon: "warning",
+      iconColor: "#972E3F",
       showCancelButton: true,
-      confirmButtonColor: "#1A759F",
+      confirmButtonColor: "#393C47",
       cancelButtonColor: "#9F2A1A",
       confirmButtonText: "Sim, quero desalocar!",
       cancelButtonText: "Cancelar",
@@ -444,6 +445,7 @@ const cadastro = () => {
         await Swal.fire({
           title: "Funcionário desalocado com sucesso!",
           icon: "success",
+          confirmButtonColor: "#972E3F",
           customClass: {
             popup: "my-swal-popup",
             title: "my-swal-title",

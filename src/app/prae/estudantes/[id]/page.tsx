@@ -11,6 +11,7 @@ import { generica } from "@/utils/api";
 import { useAuthService } from "@/app/authentication/auth.hook";
 import React from "react";
 import { EnderecoFields } from "@/components/EnderecoAutoComplete/EnderecoFields";
+import { genericaMultiForm } from "@/utils/api";
 
 const cadastro = () => {
   const router = useRouter();
@@ -447,47 +448,68 @@ const cadastro = () => {
   }, [endereco]);
 
   const salvarRegistro = async (item: any) => {
-    try {
-      if (!checarObrigatorios()) return;
-      const dataToSend = transformarDados(item);
-      const body = {
-        metodo: `${isEditMode ? "patch" : "post"}`,
-        uri: "/prae/" + `${estrutura.uri}`,
-        params: {},
-        data: dataToSend,
-      };
-      const response = await generica(body);
-      if (!response || response.status < 200 || response.status >= 300) {
-        toast.error(`Erro na requisição (HTTP ${response?.status || "desconhecido"})`, { position: "top-left" });
-        return;
-      }
-      if (response.data?.errors) {
-        Object.keys(response.data.errors).forEach((campoErro) => {
-          toast.error(`Erro em ${campoErro}: ${response.data.errors[campoErro]}`, {
-            position: "top-left",
-          });
-        });
-      } else if (response.data?.error) {
-        toast(response.data.error.message, { position: "top-left" });
-      } else {
-        Swal.fire({
-          title: "Aluno registrado com sucesso!",
-          icon: "success",
-          confirmButtonText: "OK"
-        }).then(() => {
-          // Redireciona em vez de recarregar a mesma página
-          if (auth.isAluno()) {
-            router.push("/prae");
-          } else {
-            router.push("/prae/estudantes");
-          }
-        });
-      }
-    } catch (error) {
-      console.error("DEBUG: Erro ao salvar registro:", error);
-      toast.error("Erro ao salvar registro. Tente novamente!", { position: "top-left" });
+  try {
+    if (!checarObrigatorios()) return;
+    
+    let dataToSend: any = transformarDados(item);
+    let useMultiForm = false;
+
+    if (isCreateMode) {
+      const formData = new FormData();
+      formData.append(
+        "dados",
+        new Blob([JSON.stringify(dataToSend)], { type: "application/json" })
+      );
+      dataToSend = formData;
+      useMultiForm = true;
     }
-  };
+
+    const body = {
+      metodo: isEditMode ? "patch" : "post",
+      uri: "/prae/" + estrutura.uri,
+      params: {},
+      data: dataToSend,
+    };
+
+    const response = useMultiForm ? await genericaMultiForm(body) : await generica(body);
+    
+    if (!response || response.status < 200 || response.status >= 300) {
+      toast.error(`Erro na requisição (HTTP ${response?.status || "desconhecido"})`, { 
+        position: "top-left" 
+      });
+      return;
+    }
+
+    if (response.data?.errors) {
+      Object.keys(response.data.errors).forEach((campoErro) => {
+        toast.error(`Erro em ${campoErro}: ${response.data.errors[campoErro]}`, {
+          position: "top-left",
+        });
+      });
+    } else if (response.data?.error) {
+      toast.error(response.data.error.message || response.data.error, { 
+        position: "top-left" 
+      });
+    } else {
+      Swal.fire({
+        title: "Aluno registrado com sucesso!",
+        icon: "success",
+        confirmButtonText: "OK"
+      }).then(() => {
+        if (auth.isAluno()) {
+          router.push("/prae");
+        } else {
+          router.push("/prae/estudantes");
+        }
+      });
+    }
+  } catch (error) {
+    console.error("DEBUG: Erro ao salvar registro:", error);
+    toast.error("Erro ao salvar registro. Tente novamente!", { 
+      position: "top-left" 
+    });
+  }
+};
 
   const salvarRegistroDadosBancarios = async (item: any) => {
     try {

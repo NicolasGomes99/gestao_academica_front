@@ -76,8 +76,12 @@ const cadastro = () => {
 
   const validarParecer = (parecer: string) => {
     if (isPrivileged && (!parecer || parecer.trim() === '')) {
+      // Limpa toasts anteriores antes de mostrar novo
+      toast.dismiss();
       toast.error("O campo parecer é obrigatório para avaliar a solicitação", {
-        position: "top-left"
+        position: "top-left",
+        autoClose: 5000,
+        toastId: "parecer-error" // ID único para evitar duplicação
       });
       return false;
     }
@@ -261,6 +265,9 @@ const cadastro = () => {
   };
 
   const chamarFuncao = async (nomeFuncao = "", valor: any = null) => {
+    // Limpa todos os toasts antes de executar qualquer ação
+    toast.dismiss();
+    
     switch (nomeFuncao) {
       case "salvar":
         await salvarRegistro(valor);
@@ -283,6 +290,7 @@ const cadastro = () => {
   };
 
   const voltarRegistro = () => {
+    toast.dismiss(); // Limpa toasts antes de navegar
     router.push("/gestao-acesso/solicitacoes");
   };
 
@@ -297,9 +305,19 @@ const cadastro = () => {
       const response = await generica(body);
       //tratamento dos erros
       if (response && response.data.errors != undefined) {
-        toast("Erro. Tente novamente!", { position: "bottom-left" });
+        toast.dismiss();
+        toast.error("Erro. Tente novamente!", { 
+          position: "bottom-left",
+          autoClose: 3000,
+          toastId: "curso-error"
+        });
       } else if (response && response.data.error != undefined) {
-        toast(response.data.error.message, { position: "bottom-left" });
+        toast.dismiss();
+        toast.error(response.data.error.message, { 
+          position: "bottom-left",
+          autoClose: 3000,
+          toastId: "curso-error"
+        });
       } else {
         if (response && response.data) {
           setCursos(response.data.content);
@@ -331,17 +349,32 @@ const cadastro = () => {
         if (response) {
           console.error("DEBUG: Status de erro:", response.status, 'statusText' in response ? response.statusText : "Sem texto de status");
         }
-        toast.error(`Erro na requisição (HTTP ${response?.status || "desconhecido"})`, { position: "top-left" });
+        toast.dismiss();
+        toast.error(`Erro na requisição (HTTP ${response?.status || "desconhecido"})`, { 
+          position: "top-left",
+          autoClose: 5000,
+          toastId: "rejeitar-error"
+        });
         return;
       }
       if (response.data?.errors) {
+        // Limpa toasts anteriores
+        toast.dismiss();
+        
         Object.keys(response.data.errors).forEach((campoErro) => {
           toast.error(`Erro em ${campoErro}: ${response.data.errors[campoErro]}`, {
             position: "top-left",
+            autoClose: 5000,
+            toastId: `error-${campoErro}`
           });
         });
       } else if (response.data?.error) {
-        toast(response.data.error.message, { position: "top-left" });
+        toast.dismiss();
+        toast.error(response.data.error.message, { 
+          position: "top-left",
+          autoClose: 5000,
+          toastId: "rejeitar-error"
+        });
       } else {
         Swal.fire({
           title: "Solicitação rejeitada!",
@@ -353,13 +386,19 @@ const cadastro = () => {
           },
         }).then((result) => {
           if (result.isConfirmed) {
+            toast.dismiss(); // Limpa toasts antes de voltar
             chamarFuncao("voltar");
           }
         });
       }
     } catch (error) {
       console.error("DEBUG: Erro ao salvar registro:", error);
-      toast.error("Erro ao salvar registro. Tente novamente!", { position: "top-left" });
+      toast.dismiss();
+      toast.error("Erro ao salvar registro. Tente novamente!", { 
+        position: "top-left",
+        autoClose: 5000,
+        toastId: "rejeitar-catch-error"
+      });
     }
   };
 
@@ -379,7 +418,10 @@ const cadastro = () => {
       const response = await generica(body);
 
       if (!response || response.status < 200 || response.status >= 300) {
-        toast.error(`Erro na aprovação (HTTP ${response?.status || "desconhecido"})`);
+        toast.dismiss();
+        toast.error(`Erro na aprovação (HTTP ${response?.status || "desconhecido"})`, {
+          toastId: "aprovar-error"
+        });
         return;
       }
 
@@ -391,11 +433,17 @@ const cadastro = () => {
           title: "my-swal-title",
           htmlContainer: "my-swal-html",
         },
-      }).then(() => chamarFuncao("voltar"));
+      }).then(() => {
+        toast.dismiss(); // Limpa toasts antes de voltar
+        chamarFuncao("voltar");
+      });
 
     } catch (error) {
       console.error("DEBUG: Erro ao aprovar solicitação:", error);
-      toast.error("Erro ao aprovar. Tente novamente!");
+      toast.dismiss();
+      toast.error("Erro ao aprovar. Tente novamente!", {
+        toastId: "aprovar-catch-error"
+      });
     }
   };
 
@@ -475,18 +523,23 @@ const cadastro = () => {
 
   const salvarRegistro = async (item: any) => {
     try {
+      // Limpa toasts anteriores
+      toast.dismiss();
 
       if (!item.documentos || !Array.isArray(item.documentos) || item.documentos.length === 0) {
         toast.error("É obrigatório anexar pelo menos um documento para solicitar o perfil.", {
           position: "top-left",
-          autoClose: 5000
+          autoClose: 5000,
+          toastId: "documento-obrigatorio"
         });
         return;
       }
 
       if (!item.tipoUsuario) {
         toast.error("É obrigatório selecionar o tipo de perfil desejado.", {
-          position: "top-left"
+          position: "top-left",
+          autoClose: 5000,
+          toastId: "tipo-usuario-obrigatorio"
         });
         return;
       }
@@ -497,13 +550,17 @@ const cadastro = () => {
         case 'ALUNO':
           if (!item.matricula || item.matricula.trim() === '') {
             toast.error("É obrigatório informar a matrícula para perfil de Aluno.", {
-              position: "top-left"
+              position: "top-left",
+              autoClose: 5000,
+              toastId: "matricula-obrigatoria"
             });
             return;
           }
           if (!item.cursoId) {
             toast.error("É obrigatório selecionar um curso para perfil de Aluno.", {
-              position: "top-left"
+              position: "top-left",
+              autoClose: 5000,
+              toastId: "curso-obrigatorio"
             });
             return;
           }
@@ -512,13 +569,17 @@ const cadastro = () => {
         case 'PROFESSOR':
           if (!item.siape || item.siape.trim() === '') {
             toast.error("É obrigatório informar o SIAPE para perfil de Professor.", {
-              position: "top-left"
+              position: "top-left",
+              autoClose: 5000,
+              toastId: "siape-obrigatorio"
             });
             return;
           }
           if (!item.cursoIds || !Array.isArray(item.cursoIds) || item.cursoIds.length === 0) {
             toast.error("É obrigatório selecionar pelo menos um curso para perfil de Professor.", {
-              position: "top-left"
+              position: "top-left",
+              autoClose: 5000,
+              toastId: "cursos-obrigatorios"
             });
             return;
           }
@@ -528,7 +589,9 @@ const cadastro = () => {
         case 'GESTOR':
           if (!item.siape || item.siape.trim() === '') {
             toast.error(`É obrigatório informar o SIAPE para perfil de ${tipoUsuario}.`, {
-              position: "top-left"
+              position: "top-left",
+              autoClose: 5000,
+              toastId: "siape-perfil-obrigatorio"
             });
             return;
           }
@@ -542,7 +605,8 @@ const cadastro = () => {
         if (!validation.valid) {
           toast.error(validation.message, {
             position: "top-left",
-            autoClose: 5000
+            autoClose: 5000,
+            toastId: "validacao-arquivo"
           });
           return;
         }
@@ -560,7 +624,8 @@ const cadastro = () => {
       if (!response) {
         toast.error('Erro de conexão com o servidor. Verifique sua internet e tente novamente.', {
           position: "top-left",
-          autoClose: 5000
+          autoClose: 5000,
+          toastId: "erro-conexao"
         });
         return;
       }
@@ -594,7 +659,8 @@ const cadastro = () => {
 
         toast.error(mensagemErro, {
           position: "top-left",
-          autoClose: 7000
+          autoClose: 7000,
+          toastId: `http-error-${response.status}`
         });
         return;
       }
@@ -603,6 +669,9 @@ const cadastro = () => {
         const erros = response.data.errors;
 
         if (typeof erros === 'object') {
+          // Limpa toasts anteriores antes de mostrar novos
+          toast.dismiss();
+          
           Object.entries(erros).forEach(([campo, mensagem]: [string, any]) => {
             let mensagemFormatada = mensagem;
 
@@ -630,13 +699,15 @@ const cadastro = () => {
 
             toast.error(mensagemFormatada, {
               position: "top-left",
-              autoClose: 6000
+              autoClose: 6000,
+              toastId: `campo-error-${campo}`
             });
           });
         } else {
           toast.error(`Erro: ${erros}`, {
             position: "top-left",
-            autoClose: 5000
+            autoClose: 5000,
+            toastId: "erro-generico"
           });
         }
         return;
@@ -656,11 +727,15 @@ const cadastro = () => {
 
         toast.error(mensagemErro, {
           position: "top-left",
-          autoClose: 6000
+          autoClose: 6000,
+          toastId: "erro-response"
         });
         return;
       }
 
+      // Limpa todos os toasts antes de mostrar sucesso
+      toast.dismiss();
+      
       await Swal.fire({
         title: "Solicitação enviada com sucesso!",
         text: "Sua solicitação será analisada pela administração. Você receberá uma notificação sobre o resultado.",
@@ -674,10 +749,14 @@ const cadastro = () => {
         timerProgressBar: true
       });
 
+      toast.dismiss(); // Limpa qualquer toast residual
       router.push('/gestao-acesso/solicitacoes');
 
     } catch (err: any) {
       console.error('=== ERRO NO CATCH ===', err);
+      
+      // Limpa toasts anteriores antes de mostrar erro
+      toast.dismiss();
 
       let mensagemErro = 'Erro inesperado ao enviar solicitação. Tente novamente.';
 
@@ -691,7 +770,8 @@ const cadastro = () => {
 
       toast.error(mensagemErro, {
         position: "top-left",
-        autoClose: 7000
+        autoClose: 7000,
+        toastId: "catch-error"
       });
     }
   };
@@ -805,8 +885,11 @@ const cadastro = () => {
 
     } catch (error) {
       console.error("DEBUG: Erro ao localizar registro:", error);
+      toast.dismiss();
       toast.error("Erro ao localizar registro. Tente novamente!", {
         position: "top-left",
+        autoClose: 5000,
+        toastId: "editar-error"
       });
     }
   };
@@ -821,7 +904,10 @@ const cadastro = () => {
       });
 
       if (!response) {
-        toast.error('Erro de conexão. Tente novamente.');
+        toast.dismiss();
+        toast.error('Erro de conexão. Tente novamente.', {
+          toastId: "current-user-error"
+        });
         return;
       }
 
@@ -861,7 +947,10 @@ const cadastro = () => {
       setDadosPreenchidos(mappedData);
     } catch (error) {
       console.error('Erro ao carregar usuário atual:', error);
-      toast.error('Não foi possível carregar o usuário atual.');
+      toast.dismiss();
+      toast.error('Não foi possível carregar o usuário atual.', {
+        toastId: "current-user-catch-error"
+      });
     }
   };
 
