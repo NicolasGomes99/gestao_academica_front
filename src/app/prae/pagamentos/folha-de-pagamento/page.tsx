@@ -24,7 +24,7 @@ interface Pagamento {
 }
 
 const estrutura = {
-  uri: "beneficio/pendentes",
+  uri: "/pagamento",
   cabecalho: {
     titulo: "Folha de pagamento",
     migalha: [
@@ -81,45 +81,37 @@ const PageLista = () => {
   };
 
   const pesquisarRegistro = async (params: any = null) => {
-    try {
-      const body = {
-        metodo: 'get',
-        uri: '/prae/' + estrutura.uri,
-        params: params || {},
-        data: {}
-      };
+  try {
+    const response = await generica({
+      metodo: 'get',
+      uri: '/prae/beneficio/pendentes',
+      params: params || {},
+      data: {}
+    });
 
-      const response = await generica(body);
+    const page = response?.data;
 
-      if (response?.data?.errors) {
-        throw new Error("Erro ao carregar registros");
-      }
+    const formatarData = (dataISO: string) => {
+      if (!dataISO) return '';
+      return new Date(dataISO).toLocaleDateString('pt-BR');
+    };
 
-      if (response?.data?.error) {
-        throw new Error(response.data.error.message);
-      }
+    const processado = (page?.content || []).map((item: Pagamento) => ({
+      ...item,
+      periodo: `${formatarData(item.inicioBeneficio)} até ${formatarData(item.fimBeneficio)}`
+    }));
 
-      // response.data já é um array
-      const formatarData = (dataISO: string) => {
-        if (!dataISO) return '';
-        const data = new Date(dataISO);
-        return data.toLocaleDateString('pt-BR');
-      };
+    setDados({
+      content: processado,
+      totalElements: page?.totalElements ?? 0
+    });
+  } catch (error) {
+    toast.error(
+      error instanceof Error ? error.message : "Erro ao carregar registros"
+    );
+  }
+};
 
-      const processado = (response?.data || []).map((item: Pagamento) => ({
-        ...item,
-        periodo: `${formatarData(item.inicioBeneficio)} até ${formatarData(item.fimBeneficio)}`
-      }));
-
-      // agora setamos corretamente o estado no formato esperado pela Tabela
-      setDados({
-        content: processado,
-        totalElements: processado.length // adiciona total para ser usado no rodapé da tabela
-      });
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Erro ao carregar registros");
-    }
-  };
 
   const prepararPagamentoLote = () => {
     if (itensSelecionados.size === 0) {

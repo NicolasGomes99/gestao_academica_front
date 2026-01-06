@@ -112,11 +112,11 @@ type FiltrosRelatorio = {
 const estrutura = {
   uri: "pagamento",
   cabecalho: {
-    titulo: "Dashboard de Benefícios Estudantis",
+    titulo: "Relatório Financeiro",
     migalha: [
       { nome: 'Home', link: '/home' },
       { nome: 'Financeiro', link: '/financeiro' },
-      { nome: 'Dashboard de Benefícios', link: '/financeiro/relatorio' },
+      { nome: 'Relatório Financeiro', link: '/financeiro/relatorio' },
     ]
   }
 };
@@ -161,7 +161,7 @@ const PageLista = () => {
     tipo: 'todos'
   });
   const [carregando, setCarregando] = useState(false);
-  const [tiposDisponiveis, setTiposDisponiveis] = useState<string[]>([]);
+  const [tiposDisponiveis, setTiposDisponiveis] = useState<any[]>([]);
   
   // Dados calculados para os gráficos
   const [dadosCalculados, setDadosCalculados] = useState({
@@ -325,9 +325,6 @@ const PageLista = () => {
       cursosSet.add(curso);
     });
 
-    // Atualizar tipos disponíveis para filtro
-    setTiposDisponiveis(['todos', ...Array.from(tiposSet).sort()]);
-
     // Converter para array ordenada por valor
     const recursoPorTipoArray = Object.entries(recursoPorTipo)
       .map(([tipo, valor]) => ({ tipo, valor }))
@@ -474,6 +471,7 @@ const PageLista = () => {
       if (response?.data?.errors || response?.data?.error) {
         toast.error("Erro ao carregar dados. Tente novamente!", { position: "bottom-left" });
       } else if (response?.data) {
+        buscarTipoBeneficio();
         setDados(response.data);
         processarDados(response.data);
         
@@ -486,6 +484,26 @@ const PageLista = () => {
       toast.error("Erro ao carregar dados", { position: "bottom-left" });
     } finally {
       setCarregando(false);
+    }
+  };
+
+  const buscarTipoBeneficio = async () => {
+    try {
+      const response = await generica({
+        metodo: 'get',
+        uri: '/prae/tipo-beneficio',
+        params: {},
+        data: {}
+      });
+
+      if (response?.data?.errors || response?.data?.error) {
+        toast.error("Erro ao carregar tipos de benefício", { position: "bottom-left" });
+      } else {
+        setTiposDisponiveis(response.data.content);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar tipos de benefício:', error);
+      toast.error("Erro ao carregar tipos de benefício", { position: "bottom-left" });
     }
   };
 
@@ -628,10 +646,9 @@ const PageLista = () => {
                 >
                   <option value="todos">Todos os tipos de benefício</option>
                   {tiposDisponiveis
-                    .filter(tipo => tipo !== 'todos')
                     .map((tipo, index) => (
                       <option key={index} value={tipo}>
-                        {tipo}
+                        {tipo.tipo}
                       </option>
                     ))}
                 </select>
@@ -819,9 +836,6 @@ const PageLista = () => {
                     <div className="text-2xl font-bold text-gray-800">{dadosCalculados.distribuicaoSexo.masculino}%</div>
                   </div>
                 </div>
-                <p className="text-xs text-gray-500 mt-4 italic">
-                  * Nota: Distribuição simulada pois os dados atuais não contêm informação de sexo
-                </p>
               </div>
             </div>
           </div>
@@ -873,34 +887,6 @@ const PageLista = () => {
               <p className="text-sm text-gray-400 mt-1">Aplique filtros para visualizar dados</p>
             </div>
           )}
-        </div>
-
-        {/* Informações do Dashboard */}
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-xl border border-blue-100">
-          <div className="flex items-center mb-4">
-            <div className="p-2 rounded-lg bg-white mr-3 shadow-sm">
-              <Info className="w-5 h-5 text-blue-600" />
-            </div>
-            <h4 className="font-semibold text-gray-800">Informações do Dashboard</h4>
-          </div>
-          <ul className="space-y-3 text-sm text-gray-600">
-            <li className="flex items-center">
-              <div className="w-2 h-2 bg-blue-500 rounded-full mr-3"></div>
-              <span>Baseado em <strong>{dados.length} pagamento{dados.length !== 1 ? 's' : ''}</strong> registrado{dados.length !== 1 ? 's' : ''}</span>
-            </li>
-            <li className="flex items-center">
-              <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
-              <span><strong>{dadosCalculados.pessoasAtendidas}</strong> pessoa{dadosCalculados.pessoasAtendidas !== 1 ? 's' : ''} atendida{dadosCalculados.pessoasAtendidas !== 1 ? 's' : ''} de forma única</span>
-            </li>
-            <li className="flex items-center">
-              <div className="w-2 h-2 bg-purple-500 rounded-full mr-3"></div>
-              <span><strong>{dadosCalculados.tiposUnicos.length}</strong> tipo{dadosCalculados.tiposUnicos.length !== 1 ? 's' : ''} de benefício distribuído{dadosCalculados.tiposUnicos.length !== 1 ? 's' : ''}</span>
-            </li>
-            <li className="flex items-center">
-              <div className="w-2 h-2 bg-orange-500 rounded-full mr-3"></div>
-              <span>Atualização automática dos dados ao aplicar filtros</span>
-            </li>
-          </ul>
         </div>
       </div>
     </main>
