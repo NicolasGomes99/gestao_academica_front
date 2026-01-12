@@ -28,11 +28,13 @@ interface MonthCronograma {
   slots: DaySlot[];
   tipoAtendimentoId: number;
   tipoAtendimentoNome: string;
+   modalidade: "PRESENCIAL" | "REMOTO";
 }
 
 const transformCronogramas = (data: any[]): MonthCronograma[] => {
   return data.map(item => ({
     data: item.data ? item.data.split('-').reverse().join('/') : '',
+    modalidade: item.modalidade || "PRESENCIAL",
     slots: (item.vagas || []).map((vaga: any) => {
       const agendamento = (item.agendamentos || []).find((a: any) => a.vaga.id === vaga.id);
       return {
@@ -46,6 +48,7 @@ const transformCronogramas = (data: any[]): MonthCronograma[] => {
     tipoAtendimentoNome: item.tipoAtendimento?.nome
   }));
 };
+
 
 const estrutura = {
   uri: "agendamento",
@@ -141,28 +144,37 @@ const PageLista = () => {
     : [];
 
   const handleAgendar = async (data: string, horario: string) => {
-    const cronograma = cronogramas.find(c => c.data === data);
-    const slot = cronograma?.slots.find(s => s.horario === horario);
-    if (!slot) return toast.error("Vaga não encontrada!");
+  const cronograma = cronogramas.find(c => c.data === data);
+  const slot = cronograma?.slots.find(s => s.horario === horario);
 
-    try {
-      const body = {
-        metodo: 'post',
-        uri: `/prae/agendamento/${slot.id}/agendar`,
-        params: {},
-        data: {}
-      };
-      const response = await generica(body);
-      if (!response?.data?.errors && !response?.data?.error) {
-        toast.success("Agendamento realizado com sucesso!");
-        carregarCronogramas(Number(tipoFiltro));
-      } else {
-        toast.error(response?.data?.error?.message || "Erro ao agendar.");
+  if (!slot || !cronograma)
+    return toast.error("Vaga não encontrada!");
+
+  try {
+    const body = {
+      metodo: 'post',
+      uri: `/prae/agendamento/agendar`,
+      params: {},
+      data: {
+        vagaId: slot.id,
+        modalidade: cronograma.modalidade // PRESENCIAL | REMOTO
       }
-    } catch (err) {
-      toast.error("Erro ao agendar.");
+    };
+
+    const response = await generica(body);
+
+    if (!response?.data?.errors && !response?.data?.error) {
+      toast.success("Agendamento realizado com sucesso!");
+      carregarCronogramas(Number(tipoFiltro));
+    } else {
+      toast.error(response?.data?.error?.message || "Erro ao agendar.");
     }
-  };
+  } catch (err) {
+    toast.error("Erro ao agendar.");
+    console.error(err);
+  }
+};
+
 
   const handleCancelar = async (data: string, horario: string) => {
     const cronograma = cronogramas.find(c => c.data === data);

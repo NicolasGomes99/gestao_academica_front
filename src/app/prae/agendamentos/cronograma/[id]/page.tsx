@@ -18,6 +18,7 @@ interface CronogramaData {
   id?: number; 
   datas: string[]; // sempre em formato ISO (YYYY-MM-DD) 
   tipoAtendimentoId: number; 
+  modalidade: "PRESENCIAL" | "REMOTO"; 
   endereco?: any; 
 } 
 
@@ -25,6 +26,7 @@ interface CronogramaExistente {
   id: number; 
   data: string; // Formato ISO (YYYY-MM-DD)
   tipoAtendimentoId: number; 
+  modalidade: "PRESENCIAL" | "REMOTO"; 
 } 
 
 // Converte de DD/MM/YYYY para YYYY-MM-DD 
@@ -61,6 +63,7 @@ const cadastro = () => {
   const [dadosPreenchidos, setDadosPreenchidos] = useState<CronogramaData>({ 
     datas: [], 
     tipoAtendimentoId: 0, 
+    modalidade: "PRESENCIAL",
   }); 
   const [tiposAtendimento, setTiposAtendimento] = useState<TipoAtendimento[]>([]); 
   const [cronogramasExistentes, setCronogramasExistentes] = useState<CronogramaExistente[]>([]); 
@@ -111,6 +114,7 @@ const cadastro = () => {
           id: cronograma.id,
           data: dataISO,
           tipoAtendimentoId: cronograma.tipoAtendimento?.id || cronograma.tipoAtendimentoId,
+          modalidade: cronograma.modalidade || "PRESENCIAL",
         };
       }); 
 
@@ -150,18 +154,20 @@ const cadastro = () => {
     })); 
   }; 
 
-  const verificarCronogramaExistente = (data: string, tipoAtendimentoId: number): boolean => { 
+  const verificarCronogramaExistente = (data: string, tipoAtendimentoId: number, modalidade: "PRESENCIAL" | "REMOTO"): boolean => { 
     if (!tipoAtendimentoId) return false;
     
     return cronogramasExistentes.some(cronograma => {
-      // Verifica se já existe cronograma com mesma data e mesmo tipo
+      // Verifica se já existe cronograma com mesma data, mesmo tipo e mesma modalidade
       const conflito = cronograma.data === data && 
-                      cronograma.tipoAtendimentoId === tipoAtendimentoId;
+                      cronograma.tipoAtendimentoId === tipoAtendimentoId &&
+                      cronograma.modalidade === modalidade;
       
       // Em modo edição, ignora os registros que fazem parte do cronograma original
       if (isEditMode && cronogramaOriginal) {
         const pertenceAoOriginal = cronogramaOriginal.datas.includes(data) && 
-                                  cronogramaOriginal.tipoAtendimentoId === tipoAtendimentoId;
+                                  cronogramaOriginal.tipoAtendimentoId === tipoAtendimentoId &&
+                                  cronogramaOriginal.modalidade === modalidade;
         if (pertenceAoOriginal) return false;
       }
       
@@ -175,7 +181,7 @@ const cadastro = () => {
     if (!dadosPreenchidos.tipoAtendimentoId) return conflitos;
 
     dadosPreenchidos.datas.forEach(data => {
-      if (verificarCronogramaExistente(data, dadosPreenchidos.tipoAtendimentoId)) {
+      if (verificarCronogramaExistente(data, dadosPreenchidos.tipoAtendimentoId, dadosPreenchidos.modalidade)) {
         const dataFormatada = parseDateLocal(data).toLocaleDateString("pt-BR");
         conflitos.push(dataFormatada);
       }
@@ -209,105 +215,131 @@ const cadastro = () => {
   }; 
 
   const salvarRegistro = async () => { 
-    if (!dadosPreenchidos.tipoAtendimentoId) { 
-      toast.error("Selecione um tipo de atendimento"); 
-      return; 
-    } 
+  if (!dadosPreenchidos.tipoAtendimentoId) { 
+    toast.error("Selecione um tipo de atendimento"); 
+    return; 
+  } 
 
-    if (dadosPreenchidos.datas.length === 0) { 
-      toast.error("Selecione pelo menos uma data no calendário"); 
-      return; 
-    } 
+  if (!dadosPreenchidos.modalidade) { 
+    toast.error("Selecione uma modalidade de atendimento"); 
+    return; 
+  } 
 
-    const conflitos = verificarConflitos();
+  if (dadosPreenchidos.datas.length === 0) { 
+    toast.error("Selecione pelo menos uma data no calendário"); 
+    return; 
+  } 
 
-    if (conflitos.length > 0) { 
-      toast.error(`Já existem cronogramas com o mesmo tipo de atendimento para as seguintes datas: ${conflitos.join(", ")}`); 
-      return; 
-    } 
+  const conflitos = verificarConflitos();
 
-    try { 
-      if (isEditMode) { 
-        // MODO EDIÇÃO: Atualizar completamente o cronograma
-        const datasOriginais = cronogramaOriginal?.datas || [];
-        const novasDatas = dadosPreenchidos.datas.filter(data => !datasOriginais.includes(data));
-        const datasRemovidas = datasOriginais.filter(data => !dadosPreenchidos.datas.includes(data));
+  if (conflitos.length > 0) { 
+    toast.error(`Já existem cronogramas com o mesmo tipo e modalidade para as seguintes datas: ${conflitos.join(", ")}`); 
+    return; 
+  } 
 
-        for (const data of datasRemovidas) {
-          const cronogramaParaRemover = cronogramasExistentes.find(c => 
+  try { 
+    if (isEditMode) { 
+      // MODO EDIÇÃO: Atualizar completamente o cronograma
+      const datasOriginais = cronogramaOriginal?.datas || [];
+      const novasDatas = dadosPreenchidos.datas.filter(data => !datasOriginais.includes(data));
+      const datasRemovidas = datasOriginais.filter(data => !dadosPreenchidos.datas.includes(data));
+
+      for (const data of datasRemovidas) {
+        const cronogramaParaRemover = cronogramasExistentes.find(c => 
+          c.data === data && 
+          c.tipoAtendimentoId === cronogramaOriginal?.tipoAtendimentoId &&
+          c.modalidade === cronogramaOriginal?.modalidade
+        );
+        
+        if (cronogramaParaRemover) {
+          await generica({
+            metodo: "delete",
+            uri: `/prae/${estrutura.uri}/${cronogramaParaRemover.id}`,
+            params: {},
+          });
+        }
+      }
+
+      // Depois criar novos registros para as datas adicionadas
+      if (novasDatas.length > 0) {
+        const payload = {
+          datas: novasDatas.map(formatDateToAPI),
+          tipoAtendimentoId: Number(dadosPreenchidos.tipoAtendimentoId),
+          modalidade: dadosPreenchidos.modalidade,
+        };
+        
+        console.log("POST - Criando novas datas, payload:", payload);
+        
+        await generica({
+          metodo: "post",
+          uri: `/prae/${estrutura.uri}`,
+          params: {},
+          data: payload,
+        });
+      }
+
+      // Atualizar modalidade ou tipo se mudou
+      if (dadosPreenchidos.tipoAtendimentoId !== cronogramaOriginal?.tipoAtendimentoId || 
+          dadosPreenchidos.modalidade !== cronogramaOriginal?.modalidade) {
+        const datasRestantes = dadosPreenchidos.datas.filter(data => !novasDatas.includes(data));
+        
+        for (const data of datasRestantes) {
+          const cronogramaParaAtualizar = cronogramasExistentes.find(c => 
             c.data === data && 
-            c.tipoAtendimentoId === cronogramaOriginal?.tipoAtendimentoId
+            c.tipoAtendimentoId === cronogramaOriginal?.tipoAtendimentoId &&
+            c.modalidade === cronogramaOriginal?.modalidade
           );
           
-          if (cronogramaParaRemover) {
+          if (cronogramaParaAtualizar) {
+            const payload = {
+              data: formatDateToAPI(data),
+              tipoAtendimentoId: Number(dadosPreenchidos.tipoAtendimentoId),
+              modalidade: dadosPreenchidos.modalidade,
+            };
+            
+            console.log(`PATCH - Atualizando ID ${cronogramaParaAtualizar.id}, payload:`, payload);
+            
             await generica({
-              metodo: "delete",
-              uri: `/prae/${estrutura.uri}/${cronogramaParaRemover.id}`,
+              metodo: "patch",
+              uri: `/prae/${estrutura.uri}/${cronogramaParaAtualizar.id}`,
               params: {},
+              data: payload,
             });
           }
         }
-
-        // Depois criar novos registros para as datas adicionadas
-        if (novasDatas.length > 0) {
-          await generica({
-            metodo: "post",
-            uri: `/prae/${estrutura.uri}`,
-            params: {},
-            data: {
-              datas: novasDatas.map(formatDateToAPI),
-              tipoAtendimentoId: Number(dadosPreenchidos.tipoAtendimentoId),
-            },
-          });
-        }
-
-        if (dadosPreenchidos.tipoAtendimentoId !== cronogramaOriginal?.tipoAtendimentoId) {
-          const datasRestantes = dadosPreenchidos.datas.filter(data => !novasDatas.includes(data));
-          
-          for (const data of datasRestantes) {
-            const cronogramaParaAtualizar = cronogramasExistentes.find(c => 
-              c.data === data && 
-              c.tipoAtendimentoId === cronogramaOriginal?.tipoAtendimentoId
-            );
-            
-            if (cronogramaParaAtualizar) {
-              await generica({
-                metodo: "patch",
-                uri: `/prae/${estrutura.uri}/${cronogramaParaAtualizar.id}`,
-                params: {},
-                data: {
-                  data: formatDateToAPI(data),
-                  tipoAtendimentoId: Number(dadosPreenchidos.tipoAtendimentoId),
-                },
-              });
-            }
-          }
-        }
-      } else { 
-        // MODO CRIAÇÃO: Criar todos os registros de uma vez 
-        await generica({ 
-          metodo: "post", 
-          uri: `/prae/${estrutura.uri}`, 
-          params: {}, 
-          data: { 
-            datas: dadosPreenchidos.datas.map(formatDateToAPI), 
-            tipoAtendimentoId: Number(dadosPreenchidos.tipoAtendimentoId), 
-          }, 
-        }); 
-      } 
-
-      Swal.fire({ 
-        title: "Sucesso!", 
-        text: `Cronograma ${isEditMode ? "atualizado" : "criado"} com sucesso.`, 
-        icon: "success", 
-      }).then(() => { 
-        router.push("/prae/agendamentos/cronograma"); 
+      }
+    } else { 
+      // MODO CRIAÇÃO: Criar todos os registros de uma vez 
+      const payloadData = {
+        datas: dadosPreenchidos.datas.map(formatDateToAPI),
+        tipoAtendimentoId: Number(dadosPreenchidos.tipoAtendimentoId),
+        modalidade: dadosPreenchidos.modalidade,
+      };
+      
+      console.log("POST - Criando cronograma, payload:", payloadData);
+      console.log("Modalidade antes de enviar:", dadosPreenchidos.modalidade);
+      
+      await generica({ 
+        metodo: "post", 
+        uri: `/prae/${estrutura.uri}`, 
+        params: {}, 
+        data: payloadData,
       }); 
-    } catch (error: any) { 
-      console.error("Erro ao salvar registro:", error); 
-      toast.error("Erro ao salvar o registro."); 
     } 
-  }; 
+
+    Swal.fire({ 
+      title: "Sucesso!", 
+      text: `Cronograma ${isEditMode ? "atualizado" : "criado"} com sucesso.`, 
+      icon: "success", 
+      confirmButtonColor: "#972E3F",
+    }).then(() => { 
+      router.push("/prae/agendamentos/cronograma"); 
+    }); 
+  } catch (error: any) { 
+    console.error("Erro ao salvar registro:", error); 
+    toast.error("Erro ao salvar o registro."); 
+  } 
+}; 
 
   const editarRegistro = async (item: any) => { 
     try { 
@@ -331,15 +363,17 @@ const cadastro = () => {
         } 
       } 
 
-      // Buscar todos os cronogramas do mesmo tipo para preencher as datas 
+      // Buscar todos os cronogramas do mesmo tipo e modalidade para preencher as datas 
       const cronogramasDoMesmoTipo = cronogramasExistentes.filter(c => 
-        c.tipoAtendimentoId === dados.tipoAtendimento?.id 
+        c.tipoAtendimentoId === dados.tipoAtendimento?.id &&
+        c.modalidade === (dados.modalidade || "PRESENCIAL")
       ); 
 
       const datasDoCronograma = cronogramasDoMesmoTipo.map(c => c.data); 
 
       const dadosCronograma = { 
-        tipoAtendimentoId: dados.tipoAtendimento?.id || 0, 
+        tipoAtendimentoId: dados.tipoAtendimento?.id || 0,
+        modalidade: dados.modalidade || "PRESENCIAL",
         datas: dataFormatada ? [dataFormatada, ...datasDoCronograma.filter(d => d !== dataFormatada)] : datasDoCronograma, 
       }; 
 
@@ -369,7 +403,7 @@ const cadastro = () => {
         console.log("Conflitos detectados:", conflitos);
       }
     }
-  }, [dadosPreenchidos.tipoAtendimentoId, dadosPreenchidos.datas]);
+  }, [dadosPreenchidos.tipoAtendimentoId, dadosPreenchidos.datas, dadosPreenchidos.modalidade]);
 
   return ( 
     <main className="flex flex-wrap justify-center mx-auto"> 
@@ -395,7 +429,25 @@ const cadastro = () => {
               </option> 
             ))} 
           </select> 
-        </div> 
+        </div>
+
+        <div className="mb-6">
+          <label className="block font-bold mb-2">Modalidade de Atendimento</label>
+          <select
+            className="w-full border rounded p-2"
+            value={dadosPreenchidos.modalidade}
+            onChange={(e) =>
+              setDadosPreenchidos((prev) => ({
+                ...prev,
+                modalidade: e.target.value as "PRESENCIAL" | "REMOTO",
+              }))
+            }
+          >
+            <option value="">Selecione...</option>
+            <option value="PRESENCIAL">Presencial</option>
+            <option value="REMOTO">Remoto</option>
+          </select>
+        </div>
 
         <div className="mb-6"> 
           <label className="block font-bold mb-2"> 
@@ -423,7 +475,7 @@ const cadastro = () => {
               <div className="flex flex-wrap gap-2"> 
                 {dadosPreenchidos.datas.map((date, index) => { 
                   const isDataOriginal = cronogramaOriginal?.datas.includes(date); 
-                  const existeConflito = verificarCronogramaExistente(date, dadosPreenchidos.tipoAtendimentoId); 
+                  const existeConflito = verificarCronogramaExistente(date, dadosPreenchidos.tipoAtendimentoId, dadosPreenchidos.modalidade); 
 
                   return ( 
                     <span 

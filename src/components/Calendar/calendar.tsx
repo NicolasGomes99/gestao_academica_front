@@ -17,6 +17,7 @@ interface MonthCronograma {
   slots: DaySlot[];
   tipoAtendimentoId: number;
   tipoAtendimentoNome: string;
+  modalidade: "PRESENCIAL" | "REMOTO";
 }
 
 interface CalendarProps {
@@ -54,6 +55,7 @@ const Calendar: React.FC<CalendarProps> = ({
   const [selectedDaySlots, setSelectedDaySlots] = useState<DaySlot[]>([]);
   const [selectedDayString, setSelectedDayString] = useState<string>('');
   const [selectedTipoAtendimento, setSelectedTipoAtendimento] = useState<string>('');
+  const [selectedModalidade, setSelectedModalidade] = useState<"PRESENCIAL" | "REMOTO" | "">("");
 
 
   useEffect(() => {
@@ -101,7 +103,8 @@ const Calendar: React.FC<CalendarProps> = ({
     if (!cronogramaDay || cronogramaDay.slots.length === 0) return;
     setSelectedDayString(formatDate(date));
     setSelectedDaySlots(cronogramaDay.slots);
-    setSelectedTipoAtendimento(cronogramaDay.tipoAtendimentoNome); // aqui!
+    setSelectedTipoAtendimento(cronogramaDay.tipoAtendimentoNome); 
+    setSelectedModalidade(cronogramaDay.modalidade);
     setIsModalOpen(true);
   };
 
@@ -209,6 +212,18 @@ const Calendar: React.FC<CalendarProps> = ({
               >
                 {day.getDate()}
               </div>
+
+               {cronogramaDay && (
+    <span
+      className={`mt-1 text-xs px-2 py-0.5 rounded-full font-medium ${
+        cronogramaDay.modalidade === "REMOTO"
+          ? "bg-blue-100 text-blue-800"
+          : "bg-green-100 text-green-800"
+      }`}
+    >
+      {cronogramaDay.modalidade === "REMOTO" ? "Remoto" : "Presencial"}
+    </span>
+  )}
               {cronogramaDay && cronogramaDay.slots.length > 0 ? (() => {
                 const vagasDisponiveis = cronogramaDay.slots.filter(s => !s.userScheduled).length;
                 const vagasAgendadas = cronogramaDay.slots.filter(s => s.userScheduled).length;
@@ -286,13 +301,13 @@ const Calendar: React.FC<CalendarProps> = ({
         <div className="mt-6 flex justify-end gap-x-4">
           <button
             onClick={() => router.push('/prae/agendamentos/calendario/meus-agendamentos')}
-            className="px-4 py-2 bg-primary-500 text-white rounded-md"
+            className="px-4 py-2 bg-extra-150 text-white rounded-md hover:bg-extra-50 "
           >
             Meus Agendamentos
           </button>
           <button
             onClick={() => router.push('/prae/agendamentos/calendario/meus-cancelamentos')}
-            className="px-4 py-2 bg-primary-500 text-white rounded-md"
+            className="px-4 py-2 bg-extra-150 text-white rounded-md hover:bg-extra-50 "
           >
             Meus Cancelamentos
           </button>
@@ -312,6 +327,18 @@ const Calendar: React.FC<CalendarProps> = ({
         <p className="text-md text-gray-700 mb-4">
           Tipo de atendimento: <span className="font-semibold">{selectedTipoAtendimento}</span>
         </p>
+        <p className="text-md text-gray-700 mb-4">
+  Modalidade:&nbsp;
+  <span
+    className={`inline-block px-2 py-0.5 rounded-full text-sm font-semibold ${
+      selectedModalidade === "REMOTO"
+        ? "bg-blue-100 text-blue-800"
+        : "bg-green-100 text-green-800"
+    }`}
+  >
+    {selectedModalidade === "REMOTO" ? "Remoto" : "Presencial"}
+  </span>
+</p>
         <div className="flex flex-col gap-2">
           {selectedDaySlots.map((slot, idx) => {
             // Verifica se o slot é de um dia passado

@@ -98,7 +98,7 @@ const PageLista = () => {
       text: "Essa ação não poderá ser desfeita",
       icon: "warning",
       showCancelButton: true,
-      confirmButtonColor: "#1A759F",
+      confirmButtonColor: "#393C47",
       cancelButtonColor: "#9F2A1A",
       confirmButtonText: "Sim, quero deletar!",
       cancelButtonText: "Cancelar",
@@ -124,7 +124,8 @@ const PageLista = () => {
           pesquisarRegistro();
           Swal.fire({
             title: "Tipo de atendimento deletado com sucesso!",
-            icon: "success"
+            icon: "success",
+            confirmButtonColor: "#972E3F",
           });
           return;
         }

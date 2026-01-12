@@ -1,22 +1,22 @@
 "use client";
-import withAuthorization from '@/components/AuthProvider/withAuthorization';
-import Cabecalho from '@/components/Layout/Interno/Cabecalho';
-import Tabela from '@/app/prae/agendamentos/cronograma/tabela/tabela';
-import { generica } from '@/utils/api';
-import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
-import { toast } from 'react-toastify';
-import Swal from 'sweetalert2';
+import withAuthorization from "@/components/AuthProvider/withAuthorization";
+import Cabecalho from "@/components/Layout/Interno/Cabecalho";
+import Tabela from "@/app/prae/agendamentos/cronograma/tabela/tabela";
+import { generica } from "@/utils/api";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { toast } from "react-toastify";
+import Swal from "sweetalert2";
 
 const estrutura: any = {
   uri: "cronograma",
   cabecalho: {
     titulo: "Cronogramas",
     migalha: [
-      { nome: 'Home', link: '/home' },
-      { nome: 'Prae', link: '/prae' },
-      { nome: 'Cronogramas', link: '/prae/agendamentos/cronograma' },
-    ]
+      { nome: "Home", link: "/home" },
+      { nome: "Prae", link: "/prae" },
+      { nome: "Cronogramas", link: "/prae/agendamentos/cronograma" },
+    ],
   },
   tabela: {
     configuracoes: {
@@ -24,39 +24,83 @@ const estrutura: any = {
       cabecalho: true,
       rodape: true,
     },
-    botoes: [
-      { nome: 'Adicionar', chave: 'adicionar', bloqueado: false },
-    ],
+    botoes: [{ nome: "Adicionar", chave: "adicionar", bloqueado: false }],
     colunas: [
-      { nome: "Tipo de Atendimento", chave: "tipoAtendimento.nome", tipo: "texto", selectOptions: null, sort: false, pesquisar: true },
-      { nome: "Dia de Atendimento", chave: "data", tipo: "texto", selectOptions: null, sort: false, pesquisar: true },
-      { nome: "Quantidade de Vagas", chave: "vagas", tipo: "quantidade", selectOptions: null, sort: false, pesquisar: false },
-      { nome: "Horários", chave: "horarios", tipo: "array", selectOptions: null, sort: false, pesquisar: false },
-      { nome: "ações", chave: "acoes", tipo: "button", selectOptions: null, sort: false, pesquisar: false },
+      {
+        nome: "Tipo de Atendimento",
+        chave: "tipoAtendimento.nome",
+        tipo: "texto",
+        selectOptions: null,
+        sort: false,
+        pesquisar: true,
+      },
+      {
+        nome: "Modalidade",
+        chave: "modalidade",
+        tipo: "texto",
+        sort: false,
+        pesquisar: true,
+      },
+      {
+        nome: "Dia de Atendimento",
+        chave: "data",
+        tipo: "texto",
+        selectOptions: null,
+        sort: false,
+        pesquisar: true,
+      },
+      {
+        nome: "Quantidade de Vagas",
+        chave: "vagas",
+        tipo: "quantidade",
+        selectOptions: null,
+        sort: false,
+        pesquisar: false,
+      },
+      {
+        nome: "Horários",
+        chave: "horarios",
+        tipo: "array",
+        selectOptions: null,
+        sort: false,
+        pesquisar: false,
+      },
+      {
+        nome: "ações",
+        chave: "acoes",
+        tipo: "button",
+        selectOptions: null,
+        sort: false,
+        pesquisar: false,
+      },
     ],
     acoes_dropdown: [
-      { nome: 'Editar', chave: 'editar' },
-      { nome: 'Deletar', chave: 'deletar' },
-    ]
-  }
+      { nome: "Editar", chave: "editar" },
+      { nome: "Deletar", chave: "deletar" },
+    ],
+  },
 };
 
 const PageLista = () => {
   const router = useRouter();
-  const [dados, setDados] = useState<any>({ content: [], totalPages: 0, number: 0 });
+  const [dados, setDados] = useState<any>({
+    content: [],
+    totalPages: 0,
+    number: 0,
+  });
 
   const chamarFuncao = (nomeFuncao = "", valor: any = null) => {
     switch (nomeFuncao) {
-      case 'pesquisar':
+      case "pesquisar":
         pesquisarRegistro(valor);
         break;
-      case 'adicionar':
+      case "adicionar":
         adicionarRegistro();
         break;
-      case 'editar':
+      case "editar":
         editarRegistro(valor);
         break;
-      case 'deletar':
+      case "deletar":
         deletarRegistro(valor);
         break;
       default:
@@ -67,10 +111,10 @@ const PageLista = () => {
   const pesquisarRegistro = async (params = null) => {
     try {
       let body = {
-        metodo: 'get',
-        uri: '/prae/' + estrutura.uri,
+        metodo: "get",
+        uri: "/prae/" + estrutura.uri,
         params: params != null ? params : { size: 10, page: 0 },
-        data: {}
+        data: {},
       };
 
       const response = await generica(body);
@@ -83,37 +127,41 @@ const PageLista = () => {
         // Transforma os dados para adicionar o campo horarios, conforme a lógica que desejar
         const dadosTransformados = response.data.content.map((item: any) => ({
           ...item,
-          horarios: item.vagas.map((vaga: any) => `${vaga.horaInicio} - ${vaga.horaFim}`),
+          modalidade: item.modalidade === "REMOTO" ? "Remoto" : "Presencial",
+          horarios: item.vagas.map(
+            (vaga: any) => `${vaga.horaInicio} - ${vaga.horaFim}`
+          ),
         }));
         setDados({ ...response.data, content: dadosTransformados });
       }
     } catch (error) {
-      console.error('Erro ao carregar registros:', error);
+      console.error("Erro ao carregar registros:", error);
     }
   };
 
-
   const adicionarRegistro = () => {
-    router.push('/prae/agendamentos/cronograma/criar');
+    router.push("/prae/agendamentos/cronograma/criar");
   };
 
   const editarRegistro = (item: any) => {
-    router.push('/prae/agendamentos/cronograma/' + item.id);
+    router.push("/prae/agendamentos/cronograma/" + item.id);
   };
 
   const formatarDataBR = (data: string) => {
-    if (!data) return '';
-    const [ano, mes, dia] = data.split('-');
+    if (!data) return "";
+    const [ano, mes, dia] = data.split("-");
     return `${dia}/${mes}/${ano}`;
   };
 
   const deletarRegistro = async (item: any) => {
     const confirmacao = await Swal.fire({
-      title: `Você deseja deletar o cronograma do dia ${formatarDataBR(item.data)}?`,
+      title: `Você deseja deletar o cronograma do dia ${formatarDataBR(
+        item.data
+      )}?`,
       text: "Essa ação não poderá ser desfeita",
       icon: "warning",
       showCancelButton: true,
-      confirmButtonColor: "#1A759F",
+      confirmButtonColor: "#393C47",
       cancelButtonColor: "#9F2A1A",
       confirmButtonText: "Sim, quero deletar!",
       cancelButtonText: "Cancelar",
@@ -127,10 +175,10 @@ const PageLista = () => {
     if (confirmacao.isConfirmed) {
       try {
         const body = {
-          metodo: 'delete',
-          uri: '/prae/' + estrutura.uri + '/' + item.id,
+          metodo: "delete",
+          uri: "/prae/" + estrutura.uri + "/" + item.id,
           params: {},
-          data: {}
+          data: {},
         };
 
         const response = await generica(body);
@@ -143,18 +191,21 @@ const PageLista = () => {
           pesquisarRegistro();
           Swal.fire({
             title: "Cronograma deletado com sucesso!",
-            icon: "success"
+            icon: "success",
+            confirmButtonColor: "#972E3F",
           });
         }
       } catch (error) {
-        console.error('Erro ao deletar registro:', error);
-        toast.error("Erro ao deletar registro. Tente novamente!", { position: "top-left" });
+        console.error("Erro ao deletar registro:", error);
+        toast.error("Erro ao deletar registro. Tente novamente!", {
+          position: "top-left",
+        });
       }
     }
   };
 
   useEffect(() => {
-    chamarFuncao('pesquisar');
+    chamarFuncao("pesquisar");
   }, []);
 
   return (
