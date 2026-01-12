@@ -222,6 +222,8 @@ const cadastro = () => {
         Swal.fire({
           title: "Profissional registrado com sucesso!",
           icon: "success",
+          confirmButtonText: "OK",
+          confirmButtonColor: "#972E3F",
         }).then((result) => {
           if (result.isConfirmed) {
             window.location.reload();

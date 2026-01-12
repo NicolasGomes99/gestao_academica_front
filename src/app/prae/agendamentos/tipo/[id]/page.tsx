@@ -200,6 +200,8 @@ const CadastroTipoAtendimento = () => {
           title: "Sucesso!",
           text: "Tipo de atendimento salvo com sucesso",
           icon: "success",
+          confirmButtonText: "OK",
+          confirmButtonColor: "#972E3F",
         }).then(() => {
           chamarFuncao("voltar");
         });

@@ -378,7 +378,7 @@ const cadastro = () => {
       } else {
         Swal.fire({
           title: "Solicitação rejeitada!",
-          icon: "success",
+          icon: "error",
           customClass: {
             popup: "my-swal-popup",
             title: "my-swal-title",
@@ -386,7 +386,7 @@ const cadastro = () => {
           },
         }).then((result) => {
           if (result.isConfirmed) {
-            toast.dismiss(); // Limpa toasts antes de voltar
+            toast.dismiss(); 
             chamarFuncao("voltar");
           }
         });
@@ -428,6 +428,8 @@ const cadastro = () => {
       Swal.fire({
         title: "Solicitação aprovada!",
         icon: "success",
+        confirmButtonText: "OK",
+        confirmButtonColor: "#972E3F",
         customClass: {
           popup: "my-swal-popup",
           title: "my-swal-title",
@@ -740,6 +742,8 @@ const cadastro = () => {
         title: "Solicitação enviada com sucesso!",
         text: "Sua solicitação será analisada pela administração. Você receberá uma notificação sobre o resultado.",
         icon: "success",
+        confirmButtonText: "OK",
+        confirmButtonColor: "#972E3F",
         customClass: {
           popup: "my-swal-popup",
           title: "my-swal-title",
