@@ -91,9 +91,17 @@ const PageLista = () => {
 
     const page = response?.data;
 
-    const formatarData = (dataISO: string) => {
-      if (!dataISO) return '';
-      return new Date(dataISO).toLocaleDateString('pt-BR');
+    const formatarData = (data: string): string => {
+      if (!data) return '';
+
+      if (/^\d{2}\/\d{4}$/.test(data)) {
+        return data;
+      }
+
+      const d = new Date(data);
+      if (isNaN(d.getTime())) return '';
+
+      return d.toLocaleDateString('pt-BR');
     };
 
     const processado = (page?.content || []).map((item: Pagamento) => ({
