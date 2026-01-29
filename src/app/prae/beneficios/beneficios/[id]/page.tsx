@@ -61,7 +61,7 @@ const cadastro = () => {
     if (!Array.isArray(lista)) return [];
     const options = lista.map((item) => ({
       chave: item.id,
-      valor: item.nome || item.descricao || item.tipo || item.aluno.nome,
+      valor: item.nome || item.tipo || item.descricao  || item.aluno.nome,
     }));
     return options;
   };
@@ -117,9 +117,8 @@ const cadastro = () => {
             dadosPreenchidos?.tipoBeneficioId
           ),
           mensagem: "Selecione",
-          obrigatorio: true, // Alterado para não obrigatório inicialmente
-          bloqueado: isEditMode,
-          //visivel: tipoBeneficioSelecionado === "beneficio" // Mostrar apenas quando for auxílio
+          obrigatorio: true,
+          bloqueado: isEditMode
         },
         {
           line: 2,
@@ -131,15 +130,6 @@ const cadastro = () => {
           obrigatorio: false,
           bloqueado: true,
           mode: "decimal",
-        },
-        {
-          line: 3,
-          colSpan: "md:col-span-1",
-          nome: "Horas do Benefício",
-          chave: "horasBeneficio",
-          tipo: "number",
-          mensagem: "Digite",
-          obrigatorio: true,
         },
         {
           line: 3,
@@ -338,11 +328,6 @@ const cadastro = () => {
   );
 
   fd.append("parecerTermino", dadosPreenchidos.parecerTermino || "");
-
-  fd.append(
-    "horasBeneficio",
-    dadosPreenchidos.horasBeneficio?.toString() || ""
-  );
 
   // 🔥 CORREÇÃO PRINCIPAL (YearMonth)
   fd.append(
@@ -562,7 +547,6 @@ const cadastro = () => {
         setDadosPreenchidos({
           tipoBeneficioId: beneficio.tipoBeneficio?.id,
           valorBeneficio: beneficio.tipoBeneficio?.valorBeneficio,
-          horasBeneficio: beneficio.horasBeneficio,
           inicioBeneficio: beneficio.inicioBeneficio,
           fimBeneficio: beneficio.fimBeneficio,
           estudanteId: beneficio.estudantes?.id,
