@@ -210,6 +210,8 @@ const cadastro = () => {
         Swal.fire({
           title: "Tipo de benefício registrado com sucesso!",
           icon: "success",
+          confirmButtonText: "OK",
+          confirmButtonColor: "#972E3F",
         }).then((result) => {
           if (result.isConfirmed) {
             chamarFuncao("voltar");

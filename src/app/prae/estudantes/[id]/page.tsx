@@ -12,27 +12,32 @@ import { useAuthService } from "@/app/authentication/auth.hook";
 import React from "react";
 import { EnderecoFields } from "@/components/EnderecoAutoComplete/EnderecoFields";
 import { genericaMultiForm } from "@/utils/api";
+import { useSearchParams } from "next/navigation";
+
 
 const cadastro = () => {
   const router = useRouter();
   const { id } = useParams();
-  const auth = useAuthService(); // Add auth service
-  
-  // Inicializamos com um objeto contendo 'endereco' para evitar problemas
-  const [dadosPreenchidos, setDadosPreenchidos] = useState<any>({ endereco: {} });
-  const [dadosBancariosPreenchidos, setDadosBancariosPreenchidos] = useState<any>({});
+  const auth = useAuthService();
+  const searchParams = useSearchParams();
+
+
+  const [dadosPreenchidos, setDadosPreenchidos] = useState<any>({
+    endereco: {},
+  });
+  const [dadosBancariosPreenchidos, setDadosBancariosPreenchidos] =
+    useState<any>({});
   const [isDeficiente, setIsDeficiente] = useState<boolean>(false);
   const isCreateMode = id == "criar";
   const isEditMode = !isCreateMode;
-  // Controle de CEP para evitar busca automática ao carregar edição
   const [initialCep, setInitialCep] = useState<string | null>(null);
   const [cepParaBusca, setCepParaBusca] = useState<string>("");
 
   const getOptions = (lista: any[], selecionado: any) => {
     if (!Array.isArray(lista)) return [];
     const options = lista.map((item) => ({
-      chave: item.id,       // ID (valor salvo no formulário)
-      valor: item.nome || item.tipo     // Nome (exibido no select)
+      chave: item.id,
+      valor: item.nome || item.tipo,
     }));
     return options;
   };
@@ -42,14 +47,15 @@ const cadastro = () => {
     cabecalho: {
       titulo: isEditMode ? "Editar Estudante" : "Cadastrar Estudante",
       migalha: [
-        { nome: 'Home', link: '/home' },
-        { nome: 'Prae', link: '/prae' },
-        auth.isAluno() ? { nome: 'Meu Cadastro', link: '/prae/estudantes/atual' } :
-          { nome: 'Estudantes', link: '/prae/estudantes' },
+        { nome: "Home", link: "/home" },
+        { nome: "Prae", link: "/prae" },
+        auth.isAluno()
+          ? { nome: "Meu Cadastro", link: "/prae/estudantes/atual" }
+          : { nome: "Estudantes", link: "/prae/estudantes" },
         {
           nome: isEditMode ? "Editar" : "Criar",
           link: `/prae/estudantes/${isEditMode ? id : "criar"}`,
-        }
+        },
       ],
     },
     cadastro: {
@@ -102,7 +108,7 @@ const cadastro = () => {
           chave: "telefone",
           tipo: "text",
           mensagem: "Digite",
-          obrigatorio:  true,
+          obrigatorio: true,
           bloqueado: true,
           mascara: "celular",
         },
@@ -131,7 +137,7 @@ const cadastro = () => {
           nome: "Renda Per Capita",
           chave: "rendaPercapta",
           tipo: "money-brl",
-          mode: "decimal",       // ou "cents" se preferir armazenar em centavos
+          mode: "decimal",
           allowNegative: false,
           mensagem: "Digite a renda per capita",
           obrigatorio: isCreateMode,
@@ -243,24 +249,31 @@ const cadastro = () => {
           mensagem: "Qual o tipo da deficiência",
           obrigatorio: isDeficiente,
           bloqueado: !auth.isAluno(),
-        }
+        },
       ],
-      acoes: auth.isAluno() ? [
-        { nome: "Cancelar", chave: "voltar", tipo: "botao" },
-        { nome: isEditMode ? "Salvar" : "Cadastrar", chave: "salvar", tipo: "submit" },
-      ] :
-        [],
+      acoes: auth.isAluno()
+        ? [
+            { nome: "Cancelar", chave: "voltar", tipo: "botao" },
+            {
+              nome: isEditMode ? "Salvar" : "Cadastrar",
+              chave: "salvar",
+              tipo: "submit",
+            },
+          ]
+        : [],
     },
   };
 
   const estruturaDadosBancarios: any = {
     uri: "dadosBancarios",
     cabecalho: {
-      titulo: isEditMode ? "Editar Dados Bancários" : "Cadastrar Dados Bancários",
+      titulo: isEditMode
+        ? "Editar Dados Bancários"
+        : "Cadastrar Dados Bancários",
       migalha: [
-        { nome: 'Home', link: '/home' },
-        { nome: 'Prae', link: '/prae' },
-        { nome: 'Dados Bancários', link: '/prae/dados-bancarios' },
+        { nome: "Home", link: "/home" },
+        { nome: "Prae", link: "/prae" },
+        { nome: "Dados Bancários", link: "/prae/dados-bancarios" },
         {
           nome: isEditMode ? "Editar" : "Criar",
           link: `/prae/dados-bancarios/${isEditMode ? id : "criar"}`,
@@ -315,23 +328,26 @@ const cadastro = () => {
           obrigatorio: true,
         },
       ],
-      acoes: auth.isGestor() ? [
-        { nome: "Cancelar", chave: "voltar", tipo: "botao" },
-        { nome: dadosPreenchidos?.dadosBancarios ? "Salvar" : "Cadastrar", chave: "salvarDadosBancarios", tipo: "submit" }
-      ] :
-        [{ nome: "Voltar", chave: "voltar", tipo: "botao" }],
+      acoes: auth.isGestor()
+        ? [
+            { nome: "Cancelar", chave: "voltar", tipo: "botao" },
+            {
+              nome: dadosPreenchidos?.dadosBancarios ? "Salvar" : "Cadastrar",
+              chave: "salvarDadosBancarios",
+              tipo: "submit",
+            },
+          ]
+        : [{ nome: "Voltar", chave: "voltar", tipo: "botao" }],
     },
   };
 
-  // Sincroniza isDeficiente com o valor selecionado em dadosPreenchidos.deficiente
   useEffect(() => {
     setIsDeficiente(
       dadosPreenchidos.deficiente === true ||
-      dadosPreenchidos.deficiente === "true"
+        dadosPreenchidos.deficiente === "true",
     );
   }, [dadosPreenchidos.deficiente]);
 
-  // Filtra os campos 'tipoDeficiencia' e 'laudo' com base em isDeficiente
   const camposFiltrados = estrutura.cadastro.campos.filter((campo: any) => {
     if (campo.chave === "tipoDeficiencia" || campo.chave === "laudo") {
       return isDeficiente;
@@ -342,10 +358,10 @@ const cadastro = () => {
   const currentUser = async (params = null) => {
     try {
       let body = {
-        metodo: 'get',
-        uri: '/auth/aluno/current',
+        metodo: "get",
+        uri: "/auth/aluno/current",
         params: params != null ? params : { size: 25, page: 0 },
-        data: {}
+        data: {},
       };
       const response = await generica(body);
       if (response && response.data) {
@@ -353,13 +369,10 @@ const cadastro = () => {
         setDadosPreenchidos(response.data);
       }
     } catch (error) {
-      console.error('Erro ao carregar registros:', error);
+      console.error("Erro ao carregar registros:", error);
     }
   };
 
-  /**
-   * Chama funções de acordo com o botão clicado
-   */
   const chamarFuncao = async (nomeFuncao = "", valor: any = null) => {
     switch (nomeFuncao) {
       case "salvar":
@@ -379,12 +392,9 @@ const cadastro = () => {
     }
   };
 
-
   const voltarRegistro = () => {
-    if (auth.isAluno())
-      router.push("/prae");
-    else
-      router.push("/prae/estudantes");
+    if (auth.isAluno()) router.push("/prae");
+    else router.push("/prae/estudantes");
   };
 
   const checarObrigatorios = () => {
@@ -393,37 +403,48 @@ const cadastro = () => {
       if (campo.obrigatorio) {
         const valor = dadosPreenchidos[campo.chave];
         if (valor === null || valor === undefined || valor === "") {
-          toast.error(`O campo ${campo.nome} é obrigatório`, { position: "top-left" });
+          toast.error(`O campo ${campo.nome} é obrigatório`, {
+            position: "top-left",
+          });
           retorno = false;
         }
       }
     }
+
     return retorno;
-  }
+  };
 
   const transformarDados = (item: any) => {
-    const { cep, rua, complemento, numero, bairro, cidade, estado, rendaPercapta, ...rest } = item;
+    const {
+      cep,
+      rua,
+      complemento,
+      numero,
+      bairro,
+      cidade,
+      estado,
+      rendaPercapta,
+      documentos,
+      ...rest
+    } = item;
     return {
       ...rest,
       endereco: { cep, rua, complemento, numero, bairro, cidade, estado },
-      rendaPercapta: Number(rendaPercapta)
+      rendaPercapta: Number(rendaPercapta),
+      documentos: documentos,
     };
   };
 
-  // Substitui chamada direta: só busca quando cepParaBusca definido pelo usuário
   const endereco = useEnderecoByCep(cepParaBusca);
 
   useEffect(() => {
     const cepAtual = dadosPreenchidos?.cep;
     if (!cepAtual) return;
     if (initialCep === null) {
-      // Primeira vez que recebemos um CEP (carregamento de dados)
       setInitialCep(cepAtual);
-      // Em modo criação podemos já buscar; em edição não buscamos ainda
       if (isCreateMode) setCepParaBusca(cepAtual);
       return;
     }
-    // Se usuário alterou o CEP (diferente do inicial) disparamos busca
     if (cepAtual !== initialCep) {
       setCepParaBusca(cepAtual);
     }
@@ -435,101 +456,141 @@ const cadastro = () => {
         ...prev,
         endereco: {
           ...prev.endereco,
-          cep: endereco.cep || prev.endereco?.cep || '',
-          rua: prev.endereco?.rua || '',
-          bairro: endereco.bairro || prev.endereco?.bairro || '',
-          cidade: prev.endereco?.cidade || '',
-          estado: endereco.estado || prev.endereco?.estado || '',
-          complemento: prev.endereco?.complemento || '',
-          numero: prev.endereco?.numero || '',
-        }
+          cep: endereco.cep || prev.endereco?.cep || "",
+          rua: prev.endereco?.rua || "",
+          bairro: endereco.bairro || prev.endereco?.bairro || "",
+          cidade: prev.endereco?.cidade || "",
+          estado: endereco.estado || prev.endereco?.estado || "",
+          complemento: prev.endereco?.complemento || "",
+          numero: prev.endereco?.numero || "",
+        },
       }));
     }
   }, [endereco]);
 
-  const salvarRegistro = async (item: any) => {
-  try {
-    if (!checarObrigatorios()) return;
-    
-    let dataToSend: any = transformarDados(item);
-    let useMultiForm = false;
-
-    if (isCreateMode) {
-      const formData = new FormData();
-      formData.append(
-        "dados",
-        new Blob([JSON.stringify(dataToSend)], { type: "application/json" })
-      );
-      dataToSend = formData;
-      useMultiForm = true;
+  const handleDocumentoChange = (
+    tipoDocumento: string,
+    files: FileList | null,
+  ) => {
+    if (!files || files.length === 0) {
+      setDadosPreenchidos((prev: any) => ({
+        ...prev,
+        documentos: {
+          ...prev.documentos,
+          [tipoDocumento]: null,
+        },
+      }));
+      return;
     }
 
-    const body = {
-      metodo: isEditMode ? "patch" : "post",
-      uri: "/prae/" + estrutura.uri,
-      params: {},
-      data: dataToSend,
-    };
+    const file = files[0];
+    const maxSize = 10 * 1024 * 1024; // 10MB
 
-    const response = useMultiForm ? await genericaMultiForm(body) : await generica(body);
-    
-    if (!response || response.status < 200 || response.status >= 300) {
-      toast.error(`Erro na requisição (HTTP ${response?.status || "desconhecido"})`, { 
-        position: "top-left" 
+    if (file.size > maxSize) {
+      toast.error("O arquivo não pode ser maior que 10MB", {
+        position: "top-right",
       });
       return;
     }
 
-    if (response.data?.errors) {
-      Object.keys(response.data.errors).forEach((campoErro) => {
-        toast.error(`Erro em ${campoErro}: ${response.data.errors[campoErro]}`, {
-          position: "top-left",
-        });
+    const allowedTypes = [
+      "application/pdf",
+      "image/jpeg",
+      "image/png",
+      "image/jpg",
+    ];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error("Apenas PDF, JPG e PNG são permitidos", {
+        position: "top-right",
       });
-    } else if (response.data?.error) {
-      toast.error(response.data.error.message || response.data.error, { 
-        position: "top-left" 
-      });
-    } else {
-      Swal.fire({
-        title: "Aluno registrado com sucesso!",
-        icon: "success",
-        confirmButtonText: "OK"
-      }).then(() => {
-        if (auth.isAluno()) {
-          router.push("/prae");
-        } else {
-          router.push("/prae/estudantes");
-        }
-      });
+      return;
     }
-  } catch (error) {
-    console.error("DEBUG: Erro ao salvar registro:", error);
-    toast.error("Erro ao salvar registro. Tente novamente!", { 
-      position: "top-left" 
+
+    setDadosPreenchidos((prev: any) => ({
+      ...prev,
+      documentos: {
+        ...prev.documentos,
+        [tipoDocumento]: file,
+      },
+    }));
+
+    toast.success(`${tipoDocumento} enviado com sucesso!`, {
+      position: "top-right",
     });
-  }
-};
+  };
+
+  const removerDocumento = (tipoDocumento: string) => {
+    setDadosPreenchidos((prev: any) => ({
+      ...prev,
+      documentos: {
+        ...prev.documentos,
+        [tipoDocumento]: null,
+      },
+    }));
+  };
+
+  const salvarRegistro = async (item: any) => {
+    try {
+      if (!checarObrigatorios()) return;
+
+      const dataToSend = transformarDados(item);
+
+      const body = {
+        metodo: isEditMode ? "patch" : "post",
+        uri: "/prae/" + estrutura.uri,
+        params: {},
+        data: dataToSend,
+      };
+
+      const response = await generica(body);
+
+      if (!response || response.status < 200 || response.status >= 300) {
+        toast.error("Erro ao salvar cadastro");
+        return;
+      }
+
+      Swal.fire({
+        title: "Cadastro realizado!",
+        text: "Agora você pode fazer o envio dos seus documentos para finalizar o cadastro PRAE.",
+        icon: "success",
+        confirmButtonText: "OK",
+        confirmButtonColor: "#972E3F",
+      }).then(() => {
+        // Recarrega a própria página para entrar em modo edição
+        router.replace("/prae/estudantes/atual?cadastro=concluido");
+      });
+    } catch (error) {
+      toast.error("Erro ao salvar registro");
+    }
+  };
 
   const salvarRegistroDadosBancarios = async (item: any) => {
     try {
       const dataToSend = dadosBancariosPreenchidos;
       const body = {
         metodo: `${dadosPreenchidos?.dadosBancarios ? "patch" : "post"}`,
-        uri: "/prae/" + `${dadosPreenchidos?.dadosBancarios ? estruturaDadosBancarios.uri + "/" + item.id : estruturaDadosBancarios.uri + "/" + dadosPreenchidos.id}`,
+        uri:
+          "/prae/" +
+          `${dadosPreenchidos?.dadosBancarios ? estruturaDadosBancarios.uri + "/" + item.id : estruturaDadosBancarios.uri + "/" + dadosPreenchidos.id}`,
         params: {},
         data: dataToSend,
       };
       const response = await generica(body);
       if (!response || response.status < 200 || response.status >= 300) {
-        toast.error(`Erro na requisição (HTTP ${response?.status || "desconhecido"})`, { position: "top-left" });
+        toast.error(
+          `Erro na requisição (HTTP ${response?.status || "desconhecido"})`,
+          { position: "top-left" },
+        );
         return;
       }
       if (response.data?.errors) {
         Object.keys(response.data.errors).forEach((campoErro) => {
-          toast.error(`Erro em ${campoErro}: ${response.data.errors[campoErro]}`, {
-            position: "top-left",
-          });
+          toast.error(
+            `Erro em ${campoErro}: ${response.data.errors[campoErro]}`,
+            {
+              position: "top-left",
+            },
+          );
         });
       } else if (response.data?.error) {
         toast(response.data.error.message, { position: "top-left" });
@@ -545,7 +606,9 @@ const cadastro = () => {
       }
     } catch (error) {
       console.error("DEBUG: Erro ao salvar registro:", error);
-      toast.error("Erro ao salvar registro. Tente novamente!", { position: "top-left" });
+      toast.error("Erro ao salvar registro. Tente novamente!", {
+        position: "top-left",
+      });
     }
   };
 
@@ -553,11 +616,11 @@ const cadastro = () => {
     try {
       let uri;
       if (auth.isAluno()) {
-        uri = '/prae/estudantes/current';
+        uri = "/prae/estudantes/current";
       } else {
         uri = `/prae/${estrutura.uri}/${item}`;
       }
-      
+
       const body = {
         metodo: "get",
         uri: uri,
@@ -594,6 +657,7 @@ const cadastro = () => {
           bairro: response.data.endereco.bairro,
           deficiente: response.data.deficiente,
           tipoDeficiencia: response.data.tipoDeficiencia,
+          documentos: response.data.documentos || {},
         });
         setIsDeficiente(response.data.deficiente);
         if (response.data?.dadosBancarios) {
@@ -602,53 +666,106 @@ const cadastro = () => {
       }
     } catch (error) {
       console.error("DEBUG: Erro ao localizar registro:", error);
-      toast.error("Erro ao localizar registro. Tente novamente!", { position: "top-left" });
+      toast.error("Erro ao localizar registro. Tente novamente!", {
+        position: "top-left",
+      });
     }
   };
 
   useEffect(() => {
-    // Wait for auth to load
     if (auth.isLoading) return;
     if (isEditMode) {
-      if (!auth.isAluno() && !id)
-        chamarFuncao("voltar");
-      else if (auth.isAluno())
-        chamarFuncao("editar", "current");
-      else
-        chamarFuncao("editar", id);
+      if (!auth.isAluno() && !id) chamarFuncao("voltar");
+      else if (auth.isAluno()) chamarFuncao("editar", "current");
+      else chamarFuncao("editar", id);
     } else {
       currentUser();
     }
   }, [id, auth.isLoading]);
 
+  useEffect(() => {
+  if (searchParams.get("cadastro") === "concluido") {
+    Swal.fire({
+      title: "Cadastro registrado",
+      text: "Para concluir seu cadastro no PRAE, é necessário realizar o envio da documentação obrigatória. Clique em “Enviar documentos” para prosseguir.",
+      icon: "info",
+      confirmButtonText: "Entendi",
+      confirmButtonColor: "#972E3F",
+    });
+
+    // remove o parâmetro da URL após exibir o alerta
+    router.replace("/prae/estudantes/atual");
+  }
+}, [searchParams]);
+
+
   return (
     <main className="flex flex-wrap justify-center mx-auto">
       <div className="w-full md:w-11/12 lg:w-10/12 2xl:w-3/4 max-w-6xl p-4 pt-10 md:pt-12 md:pb-12">
         <Cabecalho dados={estrutura.cabecalho} />
-        <Cadastro
-          estrutura={{
-            ...estrutura,
-            cadastro: {
-              ...estrutura.cadastro,
-              campos: camposFiltrados
+
+        {auth.isAluno() && isEditMode && (
+          <div className="mt-8 flex justify-end">
+            <button
+              type="button"
+              onClick={() => router.push("/prae/estudantes/atual/documentos")}
+              className="px-6 py-2 bg-extra-150 hover:bg-extra-50 text-white rounded-md font-medium"
+            >
+              Enviar documentos
+            </button>
+          </div>
+        )}
+
+        <div className="space-y-8">
+          {/* Seção de Campos do Cadastro */}
+          <Cadastro
+            estrutura={{
+              ...estrutura,
+              cadastro: {
+                ...estrutura.cadastro,
+                campos: camposFiltrados,
+                acoes: [], // Remove os botões temporariamente
+              },
+            }}
+            dadosPreenchidos={dadosPreenchidos}
+            setDadosPreenchidos={setDadosPreenchidos}
+            chamarFuncao={chamarFuncao}
+          />
+
+          <EnderecoFields
+            cepValue={dadosPreenchidos?.cep || ""}
+            values={dadosPreenchidos}
+            onFieldChange={(name, value) =>
+              setDadosPreenchidos((prev: any) => ({ ...prev, [name]: value }))
             }
-          }}
-          dadosPreenchidos={dadosPreenchidos}
-          setDadosPreenchidos={setDadosPreenchidos}
-          chamarFuncao={chamarFuncao}
-        />
-        {/* Auto-complete endereço via CEP (reutilizável) */}
-        <EnderecoFields
-          cepValue={dadosPreenchidos?.cep || ''}
-          values={dadosPreenchidos}
-          onFieldChange={(name, value) =>
-            setDadosPreenchidos((prev: any) => ({ ...prev, [name]: value }))
-          }
-          disabled={!auth.isAluno()}
-        />
+            disabled={!auth.isAluno()}
+          />
+
+          {/* Seção de Botões de Ação */}
+          {auth.isAluno() && estrutura.cadastro.acoes.length > 0 && (
+            <div className="flex gap-4 justify-end mt-8">
+              {estrutura.cadastro.acoes.map((acao: any, idx: number) => (
+                <button
+                  key={idx}
+                  type={acao.tipo === "submit" ? "submit" : "button"}
+                  onClick={() => chamarFuncao(acao.chave, dadosPreenchidos)}
+                  className={`px-6 py-2 rounded-md font-medium transition ${
+                    acao.tipo === "submit"
+                      ? "bg-extra-150 hover:bg-extra-50 text-white"
+                      : "bg-gray-600 hover:bg-gray-700 text-white"
+                  }`}
+                >
+                  {acao.nome}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Seção de Dados Bancários */}
         {auth.isGestor() && (
           <div className="mt-10">
-            <h2 className='text-3xl'>Dados Bancários</h2>
+            <h2 className="text-3xl">Dados Bancários</h2>
             <Cadastro
               estrutura={estruturaDadosBancarios}
               dadosPreenchidos={dadosBancariosPreenchidos}
@@ -657,6 +774,7 @@ const cadastro = () => {
             />
           </div>
         )}
+
       </div>
     </main>
   );

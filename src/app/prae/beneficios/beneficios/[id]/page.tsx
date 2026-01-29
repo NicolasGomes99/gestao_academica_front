@@ -13,23 +13,40 @@ import { set } from "zod";
 import Tabela from "@/components/Tabela/Estrutura";
 import { PagamentosBeneficio } from "@/types/pagamentoBeneficio.interface";
 import { all } from "axios";
+import Modal from "@/components/Modal/Modal"; // Adicione este import se tiver um componente Modal
 
 const cadastro = () => {
   const router = useRouter();
   const { id } = useParams();
-  // Inicializamos com um objeto contendo 'endereco' para evitar problemas
-  const [dadosPreenchidos, setDadosPreenchidos] = useState<any>([]);
+  const [dadosPreenchidos, setDadosPreenchidos] = useState<any>({});
   const [tipoBeneficioSelecionado, setTipoBeneficioSelecionado] = useState<any | null>(null);
   const [estudanteSelecionado, setEstudanteSelecionado] = useState<Object | null>(null);
   const [estudantes, setEstudantes] = useState<any>({ content: [] });
   const [tipoBeneficio, setTipoBeneficio] = useState<any[]>([]);
   const [pagamentosEfetuados, setPagamentosEfetuados] = useState<PagamentosBeneficio[]>([]);
+  const [showCancelModal, setShowCancelModal] = useState(false); // Estado para controlar o modal de cancelamento
+  const [cancelamentoData, setCancelamentoData] = useState({
+    parecerTermino: "",
+    motivoEncerramento: ""
+  });
   const acoesEstudante: Array<Object> = [{ nome: "Selecionar", chave: "selecionarEstudante" }];
+
+  const motivosEncerramentoOptions = [
+    { chave: "CONCLUSAO_CURSO", valor: "Conclusão do curso" },
+    { chave: "MIGRACAO_OUTRO_BENEFICIO", valor: "Migração para outro benefício" },
+    { chave: "TRANCAMENTO_MATRICULA", valor: "Trancamento de matrícula" },
+    { chave: "DESISTENCIA_CURSO", valor: "Desistência do curso" },
+    { chave: "REPROVACAO_POR_FALTA", valor: "Reprovação por falta" },
+    { chave: "RENDIMENTO_INSUFICIENTE", valor: "Rendimento insuficiente" },
+    { chave: "OMISSAO_DADOS", valor: "Omissão de dados" },
+    { chave: "OUTRO", valor: "Outro" },
+  ];
 
   const isEditMode = id && id !== "criar";
 
   useEffect(() => {
-    setTipoBeneficioSelecionado(dadosPreenchidos?.tipoBeneficioId
+    setTipoBeneficioSelecionado(
+      dadosPreenchidos?.tipoBeneficioId
         ? tipoBeneficio?.filter((tipo) => tipo.id == dadosPreenchidos?.tipoBeneficioId)[0]
         : null
     );
@@ -47,7 +64,6 @@ const cadastro = () => {
     }
   }, [dadosPreenchidos.tipoBeneficioId]);
 
-  // Efeito exclusivo para o modo de edição
   useEffect(() => {
     pesquisarTipoBeneficio();
     if (isEditMode) {
@@ -57,11 +73,22 @@ const cadastro = () => {
     }
   }, []);
 
+  useEffect(() => {
+    if (dadosPreenchidos.motivoEncerramento) {
+      Swal.fire({
+        icon: "warning",
+        title: "Encerramento do benefício",
+        text: "Ao definir um motivo de encerramento, o benefício será finalizado.",
+        confirmButtonColor: "#972E3F",
+      });
+    }
+  }, [dadosPreenchidos.motivoEncerramento]);
+
   const getOptions = (lista: any[], selecionado: any) => {
     if (!Array.isArray(lista)) return [];
     const options = lista.map((item) => ({
       chave: item.id,
-      valor: item.nome || item.tipo || item.descricao  || item.aluno.nome,
+      valor: item.nome || item.descricao || item.tipo || item.aluno.nome,
     }));
     return options;
   };
@@ -82,7 +109,6 @@ const cadastro = () => {
     },
     cadastro: {
       campos: [
-        // Linha 1
         {
           line: 1,
           colSpan: "md:col-span-3",
@@ -99,7 +125,7 @@ const cadastro = () => {
           nome: "Remover Estudante",
           tipo: "button",
           funcao: "desselecionarEstudante",
-          visivel: estudanteSelecionado,
+          visivel: !isEditMode && estudanteSelecionado, 
         },
         {
           chave: "estudanteId",
@@ -118,7 +144,7 @@ const cadastro = () => {
           ),
           mensagem: "Selecione",
           obrigatorio: true,
-          bloqueado: isEditMode
+          bloqueado: isEditMode,
         },
         {
           line: 2,
@@ -152,23 +178,21 @@ const cadastro = () => {
         {
           line: 4,
           colSpan: "md:col-span-1",
-          nome: "Parecer de término",
-          chave: "parecerTermino",
-          tipo: "text",
-          mensagem: "Digite",
-          obrigatorio: false,
-          visivel: isEditMode,
-        },
-        {
-          line: 5,
-          colSpan: "md:col-span-1",
           nome: "Termo",
           chave: "documentos",
-          tipo: "documento", // ou outro tipo apropriado
+          tipo: "documento",
           mensagem: "Anexe o documento",
           obrigatorio: true,
           multiple: false,
           bloqueado: isEditMode,
+        },
+        {
+          line: 1,
+          colSpan: "md:col-span-1",
+          nome: "Cancelar Benefício",
+          tipo: "button",
+          funcao: "abrirModalCancelamento",
+          visivel: isEditMode,
         },
       ],
       acoes: [
@@ -220,7 +244,7 @@ const cadastro = () => {
           sort: true,
           pesquisar: true,
         },
-      ]
+      ],
     },
   };
 
@@ -261,7 +285,7 @@ const cadastro = () => {
   const chamarFuncao = async (nomeFuncao = "", valor: any = null) => {
     switch (nomeFuncao) {
       case "salvar":
-          await salvarRegistro(valor);
+        await salvarRegistro(valor);
         break;
       case "voltar":
         voltarRegistro();
@@ -291,63 +315,114 @@ const cadastro = () => {
           estudante: "",
         }));
         break;
+      case "abrirModalCancelamento":
+        abrirModalCancelamento();
+        break;
+      case "confirmarCancelamento":
+        await confirmarCancelamento();
+        break;
       default:
         break;
     }
   };
 
-  function toYearMonth(date: string | undefined | null): string {
-  if (!date) return "";
-  return date.toString().substring(0, 7);
-}
+  function monthYearToBrDate(value?: string | null): string {
+    if (!value) return "";
+    const [mes, ano] = value.split("/");
+    if (!mes || !ano) return "";
+    return `01/${mes}/${ano}`;
+  }
 
+  function brDateToYearMonth(date?: string | null): string {
+    if (!date) return "";
+
+    // yyyy-MM-dd (input type="date")
+    if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      const [ano, mes] = date.split("-");
+      return `${ano}-${mes}`;
+    }
+
+    // dd/MM/yyyy
+    if (/^\d{2}\/\d{2}\/\d{4}$/.test(date)) {
+      const [, mes, ano] = date.split("/");
+      return `${ano}-${mes}`;
+    }
+
+    return "";
+  }
+
+  function brlToBigDecimal(valor?: string | number | null): string {
+    if (valor === null || valor === undefined || valor === "") {
+      return "0.00";
+    }
+    
+    if (typeof valor === "number") {
+      return valor.toFixed(2);
+    }
+
+    if (typeof valor === "string") {
+      // Remove espaços
+      let cleanValue = valor.trim();
+
+      cleanValue = cleanValue.replace(/R\$\s?/g, "");
+      
+      cleanValue = cleanValue.replace(/\./g, "").replace(",", ".");
+      
+      const numValue = parseFloat(cleanValue);
+      
+      if (isNaN(numValue)) {
+        return "0.00";
+      }
+      
+      return numValue.toFixed(2);
+    }
+
+    return "0.00";
+  }
 
   function buildFormData(): any {
-  if (!verificarCamposObrigatorios()) return undefined;
+    if (!verificarCamposObrigatorios()) return undefined;
 
-  const fd = new FormData();
+    const fd = new FormData();
 
-  if (!dadosPreenchidos.estudanteId) {
-    toast.error("Selecione um estudante antes de salvar o benefício.", {
-      position: "top-right",
-    });
-    return undefined;
-  }
+    if (!dadosPreenchidos.estudanteId) {
+      toast.error("Selecione um estudante antes de salvar o benefício.", {
+        position: "top-right",
+      });
+      return undefined;
+    }
 
-  fd.append("estudanteId", dadosPreenchidos.estudanteId.toString());
+    if (dadosPreenchidos.motivoEncerramento) {
+      fd.append("motivoEncerramento", dadosPreenchidos.motivoEncerramento);
+    }
 
-  if (Array.isArray(dadosPreenchidos.documentos)) {
-    dadosPreenchidos.documentos.forEach((file: File) =>
-      fd.append("termo", file)
+    fd.append("estudanteId", dadosPreenchidos.estudanteId.toString());
+
+    if (Array.isArray(dadosPreenchidos.documentos)) {
+      dadosPreenchidos.documentos.forEach((file: File) =>
+        fd.append("termo", file)
+      );
+    }
+
+    fd.append(
+      "tipoBeneficioId",
+      dadosPreenchidos.tipoBeneficioId?.toString() || ""
     );
+
+    fd.append("parecerTermino", dadosPreenchidos.parecerTermino || "");
+
+    fd.append("inicioBeneficio", brDateToYearMonth(dadosPreenchidos.inicioBeneficio));
+
+    fd.append("fimBeneficio", brDateToYearMonth(dadosPreenchidos.fimBeneficio));
+
+    // CORREÇÃO: Usar o valor armazenado em dadosPreenchidos.valorBeneficio
+    const valorParaEnviar = dadosPreenchidos.valorBeneficio || tipoBeneficioSelecionado?.valorBeneficio;
+    fd.append("valorPagamento", brlToBigDecimal(valorParaEnviar));
+
+    console.log("DEBUG: valorPagamento enviado:", brlToBigDecimal(valorParaEnviar));
+
+    return fd;
   }
-
-  fd.append(
-    "tipoBeneficioId",
-    dadosPreenchidos.tipoBeneficioId?.toString() || ""
-  );
-
-  fd.append("parecerTermino", dadosPreenchidos.parecerTermino || "");
-
-  // 🔥 CORREÇÃO PRINCIPAL (YearMonth)
-  fd.append(
-    "inicioBeneficio",
-    toYearMonth(dadosPreenchidos.inicioBeneficio)
-  );
-
-  fd.append(
-    "fimBeneficio",
-    toYearMonth(dadosPreenchidos.fimBeneficio)
-  );
-
-  fd.append(
-    "valorPagamento",
-    tipoBeneficioSelecionado?.valorBeneficio?.toString() || "0"
-  );
-
-  return fd;
-}
-
 
   const voltarRegistro = () => {
     router.push("/prae/beneficios/beneficios");
@@ -400,14 +475,17 @@ const cadastro = () => {
     }
   };
 
-  const pesquisarPagamentosEfetuados = async (beneficioId: string, estudanteId: string): Promise<void> => {
+  const pesquisarPagamentosEfetuados = async (
+    beneficioId: string,
+    estudanteId: string
+  ): Promise<void> => {
     try {
       const response = await generica({
         metodo: "get",
         uri: `/prae/pagamento/beneficio/${beneficioId}`,
         data: {},
       });
-      
+
       if (response?.data?.errors != undefined) {
         toast("Erro. Tente novamente!", { position: "bottom-left" });
       } else if (response?.data?.error != undefined) {
@@ -444,8 +522,7 @@ const cadastro = () => {
     try {
       let body = {
         metodo: "get",
-        uri: "/prae/" + "tipo-beneficio",
-        //+ '/page',
+        uri: "/prae/tipo-beneficio",
         params: params != null ? params : { size: 200, page: 0 },
         data: {},
       };
@@ -509,6 +586,8 @@ const cadastro = () => {
         Swal.fire({
           title: "Benefício salvo com sucesso!",
           icon: "success",
+          confirmButtonText: "OK",
+          confirmButtonColor: "#972E3F",
         }).then((result) => {
           if (result.isConfirmed) {
             chamarFuncao("voltar");
@@ -521,7 +600,6 @@ const cadastro = () => {
         position: "top-left",
       });
     }
-    
   };
 
   const editarRegistro = async (item: any) => {
@@ -547,12 +625,14 @@ const cadastro = () => {
         setDadosPreenchidos({
           tipoBeneficioId: beneficio.tipoBeneficio?.id,
           valorBeneficio: beneficio.tipoBeneficio?.valorBeneficio,
-          inicioBeneficio: beneficio.inicioBeneficio,
-          fimBeneficio: beneficio.fimBeneficio,
+          inicioBeneficio: monthYearToBrDate(beneficio.inicioBeneficio),
+          fimBeneficio: monthYearToBrDate(beneficio.fimBeneficio),
           estudanteId: beneficio.estudantes?.id,
           parecerTermino: beneficio.parecerTermino,
+          motivoEncerramento: beneficio.motivoEncerramento ?? "",
         });
-        setTipoBeneficioSelecionado(beneficio?.tipoBeneficio?.naturezaBeneficio);
+
+        setTipoBeneficioSelecionado(beneficio?.tipoBeneficio);
         pesquisarEstudante(beneficio?.estudantes?.id);
         pesquisarPagamentosEfetuados(
           beneficio?.tipoBeneficio?.id,
@@ -607,7 +687,85 @@ const cadastro = () => {
     }));
   };
 
-  // Filtra os campos com base na visibilidade
+  const abrirModalCancelamento = () => {
+    setShowCancelModal(true);
+  };
+
+  const fecharModalCancelamento = () => {
+    setShowCancelModal(false);
+    setCancelamentoData({
+      parecerTermino: "",
+      motivoEncerramento: ""
+    });
+  };
+
+  const confirmarCancelamento = async () => {
+    const result = await Swal.fire({
+      title: "Tem certeza?",
+      text: "Tem certeza que pretende realizar essa ação? Ela cancelará o benefício deste usuário.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#972E3F",
+      cancelButtonColor: "#6c757d",
+      confirmButtonText: "Sim, cancelar benefício",
+      cancelButtonText: "Não, cancelar"
+    });
+
+    if (!result.isConfirmed) {
+      return;
+    }
+
+    try {
+      const dataToSend = {
+        parecerTermino: cancelamentoData.parecerTermino,
+        motivoEncerramento: cancelamentoData.motivoEncerramento
+      };
+
+      const body = {
+        metodo: "patch",
+        uri: `/prae/${estrutura.uri}/${id}/cancelar`, 
+        params: {},
+        data: dataToSend,
+      };
+
+      const response = await generica(body);
+      
+      if (!response || response.status < 200 || response.status >= 300) {
+        toast.error(`Erro ao cancelar benefício (HTTP ${response?.status || "desconhecido"})`, {
+          position: "top-left"
+        });
+        return;
+      }
+
+      if (response.data?.errors) {
+        Object.keys(response.data.errors).forEach((campoErro) => {
+          toast.error(`Erro em ${campoErro}: ${response.data.errors[campoErro]}`, {
+            position: "top-left",
+          });
+        });
+      } else if (response.data?.error) {
+        toast.error(response.data.error.message, { position: "top-left" });
+      } else {
+        Swal.fire({
+          title: "Benefício cancelado com sucesso!",
+          icon: "success",
+          confirmButtonText: "OK",
+          confirmButtonColor: "#972E3F",
+        }).then((result) => {
+          if (result.isConfirmed) {
+            fecharModalCancelamento();
+            chamarFuncao("voltar");
+          }
+        });
+      }
+    } catch (error) {
+      console.error("Erro ao cancelar benefício:", error);
+      toast.error("Erro ao cancelar benefício. Tente novamente!", {
+        position: "top-left",
+      });
+    }
+  };
+
   const camposFiltrados = estrutura.cadastro.campos.filter((campo: any) => {
     return campo.visivel || campo.visivel === undefined;
   });
@@ -634,6 +792,7 @@ const cadastro = () => {
           </>
         )}
         <Cadastro
+          key={`${isEditMode}-${dadosPreenchidos?.inicioBeneficio || "novo"}`}
           estrutura={{
             ...estrutura,
             cadastro: {
@@ -646,6 +805,73 @@ const cadastro = () => {
           chamarFuncao={chamarFuncao}
         />
       </div>
+
+      {/* Modal de Cancelamento */}
+      {showCancelModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <h3 className="text-lg font-medium leading-6 text-gray-900 mb-4">
+                Cancelar Benefício
+              </h3>
+              
+              <div className="mt-2">
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Parecer de Término
+                  </label>
+                  <textarea
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                    rows={3}
+                    value={cancelamentoData.parecerTermino}
+                    onChange={(e) => setCancelamentoData(prev => ({
+                      ...prev,
+                      parecerTermino: e.target.value
+                    }))}
+                    placeholder="Digite o parecer de término"
+                  />
+                </div>
+
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Motivo do Encerramento
+                  </label>
+                  <select
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                    value={cancelamentoData.motivoEncerramento}
+                    onChange={(e) => setCancelamentoData(prev => ({
+                      ...prev,
+                      motivoEncerramento: e.target.value
+                    }))}
+                  >
+                    <option value="">Selecione um motivo</option>
+                    {motivosEncerramentoOptions.map((option) => (
+                      <option key={option.chave} value={option.chave}>
+                        {option.valor}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="flex justify-end space-x-3">
+                  <button
+                    onClick={fecharModalCancelamento}
+                    className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={() => chamarFuncao("confirmarCancelamento")}
+                    className="px-4 py-2 bg-extra-150 text-white rounded-md hover:bg-extra-50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                  >
+                    Confirmar Cancelamento
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 };
