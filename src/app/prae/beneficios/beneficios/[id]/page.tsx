@@ -125,7 +125,7 @@ const cadastro = () => {
           nome: "Remover Estudante",
           tipo: "button",
           funcao: "desselecionarEstudante",
-          visivel: estudanteSelecionado,
+          visivel: !isEditMode && estudanteSelecionado, 
         },
         {
           chave: "estudanteId",
@@ -188,12 +188,11 @@ const cadastro = () => {
         },
         {
           line: 1,
-          colSpan: "md:col-span-2",
+          colSpan: "md:col-span-1",
           nome: "Cancelar Benefício",
           tipo: "button",
           funcao: "abrirModalCancelamento",
           visivel: isEditMode,
-          estilo: "bg-red-600 hover:bg-red-700 text-white"
         },
       ],
       acoes: [
@@ -717,15 +716,10 @@ const cadastro = () => {
     }
 
     try {
-      const dataToSend = new FormData();
-      
-      if (cancelamentoData.parecerTermino) {
-        dataToSend.append("parecerTermino", cancelamentoData.parecerTermino);
-      }
-      
-      if (cancelamentoData.motivoEncerramento) {
-        dataToSend.append("motivoEncerramento", cancelamentoData.motivoEncerramento);
-      }
+      const dataToSend = {
+        parecerTermino: cancelamentoData.parecerTermino,
+        motivoEncerramento: cancelamentoData.motivoEncerramento
+      };
 
       const body = {
         metodo: "patch",
@@ -734,7 +728,7 @@ const cadastro = () => {
         data: dataToSend,
       };
 
-      const response = await generica(body, "multipart/form-data");
+      const response = await generica(body);
       
       if (!response || response.status < 200 || response.status >= 300) {
         toast.error(`Erro ao cancelar benefício (HTTP ${response?.status || "desconhecido"})`, {
