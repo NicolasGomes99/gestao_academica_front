@@ -157,7 +157,7 @@ const PageLista = () => {
       params: {},
       data: {
         vagaId: slot.id,
-        modalidade: cronograma.modalidade // PRESENCIAL | REMOTO
+        modalidade: cronograma.modalidade 
       }
     };
 

@@ -80,7 +80,7 @@ const PageLista = () => {
     try {
       let body = {
         metodo: 'get',
-        uri: '/prae/' + estrutura.uri,
+        uri: '/prae/beneficio/pendentes',
         //+ '/page',
         params: params != null ? params : { size: 10, page: 0 },
         data: {}
