@@ -120,12 +120,12 @@ export default function PraeLayout({ children }: { children: React.ReactNode }) 
               icon: <AccountBalanceWallet fontSize="small" className="text-white" />,
               roles: ["aluno"],
             },
-            /* {
+             {
               label: "Relatório Financeiro",
               route: "/prae/pagamentos/relatorio-financeiro",
               icon: <Assessment fontSize="small" className="text-white" />,
               roles: isPraeAccess ? ["gestor"] : [""],
-            }, */
+            }, 
           ],
         },
         {
