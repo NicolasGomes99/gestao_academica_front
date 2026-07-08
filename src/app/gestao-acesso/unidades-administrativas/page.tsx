@@ -32,8 +32,8 @@ const estrutura: any = {
       { nome: 'Adicionar', chave: 'adicionar', bloqueado: false },
     ],
     colunas: [
-      { nome: "Nome", chave: "nome", tipo: "texto", selectOptions: null, sort: false, pesquisar: true },
-      { nome: "Código", chave: "codigo", tipo: "texto", selectOptions: null, sort: false, pesquisar: true },
+      { nome: "Nome", chave: "nome", tipo: "texto", selectOptions: null, sort: false, pesquisar: false },
+      { nome: "Código", chave: "codigo", tipo: "texto", selectOptions: null, sort: false, pesquisar: false },
       { nome: "ações", chave: "acoes", tipo: "button", selectOptions: null, sort: false, pesquisar: false },
     ],
     acoes_dropdown: [
