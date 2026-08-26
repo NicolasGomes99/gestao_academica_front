@@ -42,23 +42,23 @@ export default function EditaisLayout({ children }: { children: React.ReactNode 
           roles: ["administrador", "gestor", "tecnico"],
         },
         {
+          label: "Tipo Edital",
+          route: "/gestao-edital/tipo-edital",
+          icon: <Article fontSize="small" className="text-white" />,
+          roles: ["administrador", "gestor", "tecnico"],
+        },
+        {
           label: "Editais",
           route: "/gestao-edital/editais",
           icon: <Description fontSize="small" className="text-white" />,
           roles: ["administrador", "gestor", "tecnico"],
         },  
-        {
+        /* {
           label: "Status",
           route: "/gestao-edital/editais/status-personalizado",
           icon: <Article fontSize="small" className="text-white" />,
           roles: ["administrador", "gestor", "tecnico"],
-        },
-        {
-          label: "Tipo Edital",
-          route: "/gestao-edital/editais/tipo-edital",
-          icon: <Article fontSize="small" className="text-white" />,
-          roles: ["administrador", "gestor", "tecnico"],
-        },
+        }, */
       ],
     },
   };
