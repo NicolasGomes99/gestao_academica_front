@@ -6,6 +6,7 @@ import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import UnfoldLessIcon from "@mui/icons-material/UnfoldLess";
 import UnfoldMoreIcon from "@mui/icons-material/UnfoldMore";
+import { CampoPersonalizado } from "@/types/editalTypes";
 
 export type EtapaFormProps = {
   control: any;
@@ -17,6 +18,11 @@ export type EtapaFormProps = {
   collapsed?: boolean;
   onToggleCollapse?: (idx: number) => void;
   isEditalMode?: boolean;
+
+  onAddCampoEtapa?: (
+    etapaIndex: number,
+    campo: CampoPersonalizado,
+  ) => Promise<number>;
 };
 
 const EtapaForm: React.FC<EtapaFormProps> = ({
@@ -29,6 +35,7 @@ const EtapaForm: React.FC<EtapaFormProps> = ({
   onToggleCollapse,
   isEditalMode = false,
   onRemoveCampo,
+  onAddCampoEtapa,
 }) => {
   const { fields, append, remove } = useFieldArray({
     control,
@@ -183,15 +190,25 @@ const EtapaForm: React.FC<EtapaFormProps> = ({
             ))}
             <button
               type="button"
-              onClick={() =>
-                append({
-                  nome: "",
-                  rotulo: "",
+              onClick={async () => {
+                const novoCampo: CampoPersonalizado = {
+                  titulo: "",
                   obrigatorio: true,
                   tipoCampo: "TEXTO_CURTO",
-                  opcoes: "",
-                })
-              }
+                  configuracoes: "",
+                };
+
+                if (onAddCampoEtapa) {
+                  const id = await onAddCampoEtapa(index, novoCampo);
+
+                  append({
+                    ...novoCampo,
+                    id,
+                  });
+                } else {
+                  append(novoCampo);
+                }
+              }}
               className="bg-green-500 text-white px-3 py-1 rounded-md text-sm hover:bg-green-600"
             >
               + Adicionar Campo à Etapa

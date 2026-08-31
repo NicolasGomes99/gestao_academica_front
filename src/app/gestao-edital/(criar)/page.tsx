@@ -1,61 +1,23 @@
 "use client";
-import withAuthorization from "@/components/AuthProvider/withAuthorization";
-import Cadastro from "@/components/Cadastro/Estrutura";
+
+import React from "react";
+import { useForm, useFieldArray, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import Cabecalho from "@/components/Layout/Interno/Cabecalho";
-import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import { generica } from "@/utils/api";
-import { Controller, useFieldArray, useForm } from "react-hook-form";
-import {
-  CampoPersonalizado,
-  CampoPersonalizadoResponse,
-  Etapa,
-  EtapaResponse,
-  TipoEditalFormData,
-  tipoEditalSchema,
-} from "@/types/editalTypes";
-import { EditalService } from "../edital.service";
-import { toast } from "react-toastify";
 import EtapaForm from "@/components/EditalModelo/EtapaForm";
 import CampoPersonalizadoForm from "@/components/EditalModelo/CampoPersonalizadoForm";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { tipoEditalSchema, TipoEditalFormData } from "@/types/editalTypes";
+import { EditalService } from "../edital.service";
+import { toast } from "react-toastify";
+import { useRouter } from "next/navigation";
 
-const cadastro = () => {
+export default function CriarTipoEditalPage() {
   const router = useRouter();
-  const { id } = useParams();
-  const [etapasParaRemover, setEtapasParaRemover] = useState<number[]>([]);
-  const [camposParaRemover, setCamposParaRemover] = useState<number[]>([]);
-
-  const isEditMode = id && id !== "criar";
-
-  const estrutura: any = {
-    uri: "tipo-edital",
-    cabecalho: {
-      titulo: isEditMode
-        ? "Editar o Tipo de Edital"
-        : "Cadastrar o Tipo de Edital",
-      migalha: [
-        { nome: "Início", link: "/home" },
-        { nome: "Gestão de Editais", link: "/gestao-edital/editais" },
-        {
-          nome: "Tipos de Editais",
-          link: "/gestao-edital/editais/tipo-edital",
-        },
-        {
-          nome: isEditMode ? "Editar" : "Criar",
-          link: `/gestao-edital/editais/tipo-editais/${
-            isEditMode ? id : "criar"
-          }`,
-        },
-      ],
-    },
-  };
 
   const {
     control,
     handleSubmit,
     formState: { errors },
-    setValue,
   } = useForm<TipoEditalFormData>({
     resolver: zodResolver(tipoEditalSchema),
     defaultValues: {
@@ -72,155 +34,45 @@ const cadastro = () => {
     remove: removeEtapa,
     move: moveEtapa,
   } = useFieldArray({ control, name: "etapas" });
-
   const {
     fields: camposModeloFields,
     append: appendCampoModelo,
     remove: removeCampoModelo,
   } = useFieldArray({ control, name: "campos" });
 
-  const handleRemoveEtapa = (index: number) => {
-    const etapa = etapasFields[index];
-
-    // remover campos vinculados à etapa que estão marcados para remoção
-    camposParaRemover.forEach((campoId) => {
-      if (etapa.campos?.some((c) => c.campoId === campoId)) {
-        setCamposParaRemover((prev) => prev.filter((id) => id !== campoId));
-      }
-    });
-
-    if (etapa.etapaId) {
-      setEtapasParaRemover((prev) => [...prev, etapa.etapaId as number]);
-    }
-    removeEtapa(index);
-  };
-
-  const handleRemoveCampo = (index: number) => {
-    const campo = camposModeloFields[index];
-    if (campo.campoId) {
-      setCamposParaRemover((prev) => [...prev, campo.campoId as number]);
-    }
-    removeCampoModelo(index);
-  };
-
-  const handleRemoveCampoDaEtapa = (etapaIndex: number, campoIndex: number) => {
-    const etapa = etapasFields[etapaIndex];
-    if (
-      etapa &&
-      etapa.campos &&
-      etapa.campos[campoIndex] &&
-      etapa.campos[campoIndex].campoId
-    ) {
-      setCamposParaRemover((prev) => [
-        ...prev,
-        etapa.campos[campoIndex].campoId as number,
-      ]);
-    }
-  };
-
-  const chamarFuncao = async (nomeFuncao = "", valor: any = null) => {
-    switch (nomeFuncao) {
-      case "voltar":
-        voltarRegistro();
-        break;
-      case "editar":
-        editarRegistro(valor);
-        break;
-      default:
-        break;
-    }
-  };
-
-  const voltarRegistro = () => {
-    router.push("/gestao-edital/editais/tipo-edital");
-  };
-
-  const editarRegistro = async (item: any) => {
-    try {
-      const body = {
-        metodo: "get",
-        uri: "/editais/" + estrutura.uri + "/" + item,
-        params: {},
-        data: item,
-      };
-
-      const response = await generica(body);
-      if (!response) throw new Error("Resposta inválida do servidor.");
-      const { etapasModelo, camposPersonalizadosModelo, ...tipoEditalData } =
-        response.data;
-
-      const dadosEtapas = etapasModelo.map((etapa: EtapaResponse) => {
-        const camposMapeados: CampoPersonalizado[] = etapa.camposPersonalizados
-          ? etapa.camposPersonalizados.map(
-              (campo: CampoPersonalizadoResponse) =>
-                ({
-                  ...campo,
-                  campoId: campo.id,
-                } as CampoPersonalizado)
-            )
-          : [];
-
-        return {
-          ...etapa,
-          etapaId: etapa.id,
-          dataInicio: undefined,
-          dataFim: undefined,
-          campos: camposMapeados || [],
-        };
-      });
-
-      const dadosCamposModelo = camposPersonalizadosModelo.map(
-        (campo: CampoPersonalizadoResponse) => ({
-          ...campo,
-          campoId: campo.id,
-        })
-      );
-
-      setValue("nome", tipoEditalData.nome);
-      setValue("descricao", tipoEditalData.descricao);
-      setValue("etapas", dadosEtapas || []);
-      setValue("campos", dadosCamposModelo || []);
-    } catch (error) {
-      console.error("DEBUG: Erro ao localizar registro:", error);
-    }
-  };
-
   const onSubmit = async (data: TipoEditalFormData) => {
     const dataOrdenada = {
       ...data,
       etapas: data.etapas.map((etapa, idx) => ({ ...etapa, ordem: idx + 1 })),
     };
-    let resp = null;
-    console.log("etapasParaRemover", etapasParaRemover);
-    console.log("camposParaRemover", camposParaRemover);
-    if (isEditMode) {
-      resp = await EditalService.atualizarTipoEditalCompleto(
-        parseInt(id as string),
-        dataOrdenada,
-        etapasParaRemover,
-        camposParaRemover
-      );
-    } else {
-      resp = await EditalService.criarTipoEditalCompleto(dataOrdenada);
-    }
+    console.log("Dados do Formulário:", JSON.stringify(dataOrdenada, null, 2));
+    const resp = await EditalService.criarTipoEditalCompleto(dataOrdenada);
     if (resp && resp.tipoEditalModeloId) {
-      toast.success(
-        `Tipo edital ${isEditMode ? "atualizado" : "criado"} com sucesso!`
-      );
+      toast.success("Tipo de Edital criado com sucesso!");
       router.push(`/gestao-edital/editais/tipo-edital/`);
     }
   };
 
-  useEffect(() => {
-    if (id && id !== "criar") {
-      chamarFuncao("editar", id);
-    }
-  }, [id]);
+  const estrutura = {
+    cabecalho: {
+      titulo: "Criar Novo Tipo de Edital",
+      migalha: [
+        { nome: "Início", link: "/home" },
+        { nome: "Gestão de Editais", link: "/gestao-edital" },
+        { nome: "Tipo Edital", link: "/gestao-edital/editais/tipo-edital" },
+        {
+          nome: "Criar Tipo de Edital",
+          link: "/gestao-edital/editais/tipo-edital/criar",
+        },
+      ],
+    },
+  };
 
   return (
-    <main className="flex flex-wrap justify-center mx-auto">
-      <div className="w-full md:w-11/12 lg:w-10/12 2xl:w-3/4 max-w-6xl p-4 pt-10 md:pt-12 md:pb-12">
+    <main className="flex flex-wrap justify-center mx-auto bg-gray-50 min-h-screen">
+      <div className="w-full md:w-11/12 lg:w-10/12 2xl:w-4/5 max-w-7xl p-4 pt-10 md:pt-12 md:pb-12">
         <Cabecalho dados={estrutura.cabecalho} />
+
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
           <div className="bg-white p-6 rounded-lg shadow-md">
             <h2 className="text-xl font-semibold border-b pb-3 mb-4">
@@ -232,7 +84,7 @@ const cadastro = () => {
                   htmlFor="nome"
                   className="block text-sm font-medium text-gray-700 mb-1"
                 >
-                  Nome do Tipo de Edital
+                  Nome do Tipo de Edital kkkkk
                 </label>
                 <Controller
                   name="nome"
@@ -290,7 +142,7 @@ const cadastro = () => {
                   control={control}
                   pathPrefix="campos"
                   index={index}
-                  onRemove={handleRemoveCampo}
+                  onRemove={removeCampoModelo}
                 />
               ))}
               <button
@@ -320,10 +172,8 @@ const cadastro = () => {
                   control={control}
                   index={index}
                   totalEtapas={etapasFields.length}
-                  onRemoveEtapa={handleRemoveEtapa}
-                  onRemoveCampo={handleRemoveCampoDaEtapa}
+                  onRemoveEtapa={removeEtapa}
                   onMoveEtapa={moveEtapa}
-                  isEditalMode={false}
                 />
               ))}
               <button
@@ -356,6 +206,4 @@ const cadastro = () => {
       </div>
     </main>
   );
-};
-
-export default withAuthorization(cadastro);
+}

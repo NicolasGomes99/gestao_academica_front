@@ -80,7 +80,7 @@ const PageLista = () => {
     };
 
     const adicionarRegistro = () => {
-        router.push('/gestao-edital/editais/tipo-edital/criar');
+        router.push('/gestao-edital/tipo-edital/criar');
     };
     const editarRegistro = (item: any) => {
         router.push('/gestao-edital/editais/tipo-edital/' + item.id);
